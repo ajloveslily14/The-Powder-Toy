@@ -273,6 +273,14 @@ RenderView::RenderView():
 
 	checkboxOffset += cSpace;
 
+	tCheckbox = new ui::Checkbox(ui::Point(checkboxOffset, YRES+4+18), ui::Point(30, 16), "TMP", "Displays the TMP value of elements in greyscale gradients");
+	colourModes.push_back(tCheckbox);
+	tCheckbox->SetIcon(IconGradient);
+	tCheckbox->SetActionCallback(new ColourModeAction(this, COLOUR_TMP));
+	AddComponent(tCheckbox);
+
+	checkboxOffset += cSpace;
+
 	tCheckbox = new ui::Checkbox(ui::Point(checkboxOffset, YRES+4+18), ui::Point(30, 16), "H-Gradient", "Changes colors of elements slightly to show heat diffusing through them");
 	colourModes.push_back(tCheckbox);
 	tCheckbox->SetIcon(IconGradient);
@@ -410,7 +418,13 @@ void RenderView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctr
 	if (repeat)
 		return;
 	if (shift && key == '1')
+	{
 		c->LoadRenderPreset(10);
+	}
+	else if(shift && key == '2')
+	{
+		c->LoadRenderPreset(11);
+	}
 	else if(key >= '0' && key <= '9')
 	{
 		c->LoadRenderPreset(key-'0');

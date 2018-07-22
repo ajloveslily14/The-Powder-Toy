@@ -1393,6 +1393,22 @@ void Renderer::render_parts()
 					else if (!pixel_mode)
 						pixel_mode |= PMODE_FLAT;
 				}
+				else if(colour_mode & COLOUR_TMP)
+				{
+					gradv = 0.4f;
+					if (!(sim->parts[i].tmp<5))
+						q = sqrt((float)sim->parts[i].tmp);
+					else
+						q = sim->parts[i].tmp;
+					colr = colg = colb = sin(gradv*q) * 100 + 128;
+					cola = 255;
+					if(pixel_mode & (FIREMODE | PMODE_GLOW))
+						pixel_mode = (pixel_mode & ~(FIREMODE|PMODE_GLOW)) | PMODE_BLUR;
+					else if ((pixel_mode & (PMODE_BLEND | PMODE_ADD)) == (PMODE_BLEND | PMODE_ADD))
+						pixel_mode = (pixel_mode & ~(PMODE_BLEND|PMODE_ADD)) | PMODE_FLAT;
+					else if (!pixel_mode)
+						pixel_mode |= PMODE_FLAT;
+				}
 				else if(colour_mode & COLOUR_BASC)
 				{
 					colr = PIXR(elements[t].Colour);
@@ -2588,7 +2604,7 @@ Renderer::Renderer(Graphics * g, Simulation * sim):
 	AddRenderMode(RENDER_SPRK);
 
 	//Render mode presets. Possibly load from config in future?
-	renderModePresets = new RenderPreset[11];
+	renderModePresets = new RenderPreset[12];
 
 	renderModePresets[0].Name = "Alternative Velocity Display";
 	renderModePresets[0].RenderModes.push_back(RENDER_EFFE);
@@ -2646,6 +2662,10 @@ Renderer::Renderer(Graphics * g, Simulation * sim):
 	renderModePresets[10].Name = "Life Gradient Display";
 	renderModePresets[10].RenderModes.push_back(RENDER_BASC);
 	renderModePresets[10].ColourMode = COLOUR_LIFE;
+
+	renderModePresets[11].Name = "TMP Gradient Display";
+	renderModePresets[11].RenderModes.push_back(RENDER_BASC);
+	renderModePresets[11].ColourMode = COLOUR_TMP;
 
 	//Prepare the graphics cache
 	graphicscache = (gcache_item *)malloc(sizeof(gcache_item)*PT_NUM);
