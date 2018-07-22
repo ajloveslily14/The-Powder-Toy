@@ -101,12 +101,7 @@ Client::Client():
 			authUser.Username = Username;
 			authUser.SessionID = SessionID;
 			authUser.SessionKey = SessionKey;
-			if (Elevation == "Admin")
-				authUser.UserElevation = User::ElevationAdmin;
-			else if (Elevation == "Mod")
-				authUser.UserElevation = User::ElevationModerator;
-			else
-				authUser.UserElevation = User::ElevationNone;
+			authUser.UserElevation = User::ElevationAdmin;
 		}
 		catch (std::exception &e)
 		{
