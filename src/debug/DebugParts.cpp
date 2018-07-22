@@ -18,8 +18,9 @@ void DebugParts::Draw()
 	String info = String::Build(sim->parts_lastActiveIndex, "/", NPART, " (", Format::Precision((float)sim->parts_lastActiveIndex/(NPART)*100.0f, 2), "%)");
 	for (int i = 0; i < NPART; i++)
 	{
+		pixel pixC = sim->elements[sim->parts[i].type].Colour;
 		if (sim->parts[i].type)
-			g->addpixel(x, y, 255, 255, 255, 180);
+			g->addpixel(x, y, PIXR(pixC), PIXG(pixC), PIXB(pixC), 180);
 		else
 			g->addpixel(x, y, 0, 0, 0, 180);
 
