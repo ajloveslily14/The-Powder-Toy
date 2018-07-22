@@ -2442,6 +2442,7 @@ void GameView::OnDraw()
 		//FPS and some version info
 		StringBuilder fpsInfo;
 		fpsInfo << Format::Precision(2) << "FPS: " << ui::Engine::Ref().GetFps();
+		fpsInfo << "[" << activeBrush->GetSize().X << "x" << activeBrush->GetSize().Y << "]";
 
 		if (showDebug)
 		{
