@@ -2014,7 +2014,7 @@ void Renderer::render_parts()
 							addpixel(nx+nxo, ny+nyo, colr, colg, colb, 255-orbd[r]);
 					}
 				}
-				if (pixel_mode & EFFECT_DBGLINES && !(display_mode&DISPLAY_PERS))
+				if (pixel_mode && !(display_mode&DISPLAY_PERS))
 				{
 					// draw lines connecting wifi/portal channels
 					if (mousePos.X == nx && mousePos.Y == ny && i == ID(sim->pmap[ny][nx]) && debugLines)
