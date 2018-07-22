@@ -548,6 +548,14 @@ void SigHandler(int signal)
 
 int main(int argc, char * argv[])
 {
+
+#if defined(DEBUG)
+	AllocConsole() ;
+	AttachConsole(GetCurrentProcessId());
+	freopen("CON", "w", stdout);
+	std::cout << "Console Loaded!" << std::endl;
+#endif
+
 #if defined(_DEBUG) && defined(_MSC_VER)
 	_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_DEBUG);
 #endif
