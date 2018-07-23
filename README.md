@@ -1,3 +1,14 @@
+Notable differences in this fork
+==========================
+
+* If you compile with the debug flag, there's an actual console for stdout.
+* Debug lines for wifi and prti/o are always on regardless of view mode.
+* There is a "TMP Gradient" view mode that is the same as Life Gradient, but with TMP(use `Shift+2` to enable it).
+* Anyone can use `Ctrl+A` to view save info.
+* Stacking of elements doesn't create bhol.
+* The graph at the top of the screen when setting `tpt.setdebug(0x1)` shows the color of the element it represents.
+* With the hud on there is text that shows your brush size.
+
 The Powder Toy - March 2018
 ==========================
 
