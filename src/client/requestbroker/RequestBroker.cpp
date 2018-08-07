@@ -158,9 +158,6 @@ void RequestBroker::FlushThumbQueue()
 		}
 		else
 		{
-#ifdef DEBUG
-			std::cout << typeid(*this).name() << " Listener lost, discarding request" << std::endl;
-#endif
 			completeQueue.front()->Cleanup();
 		}
 		delete completeQueue.front();
