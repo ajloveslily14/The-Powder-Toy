@@ -43,7 +43,7 @@ int Simulation::Load(int fullX, int fullY, GameSave * save, bool includePressure
 	{
 		save->Expand();
 	}
-	catch (ParseException)
+	catch (ParseException &)
 	{
 		return 1;
 	}
@@ -76,7 +76,7 @@ int Simulation::Load(int fullX, int fullY, GameSave * save, bool includePressure
 				// if this is a custom element, set the ID to the ID we found when comparing identifiers in the palette map
 				// set type to 0 if we couldn't find an element with that identifier present when loading,
 				//  unless this is a default element, in which case keep the current ID, because otherwise when an element is renamed it wouldn't show up anymore in older saves
-				if (myId != 0 || pi.first.BeginsWith("DEFAULT_PT_"))
+				if (myId != 0 || !pi.first.BeginsWith("DEFAULT_PT_"))
 					partMap[pi.second] = myId;
 			}
 		}
@@ -2726,9 +2726,12 @@ int Simulation::do_move(int i, int x, int y, float nxf, float nyf)
 		parts[i].y = nyf;
 		if (ny!=y || nx!=x)
 		{
-			if (ID(pmap[y][x])==i) pmap[y][x] = 0;
-			else if (ID(photons[y][x])==i) photons[y][x] = 0;
-			if (nx<CELL || nx>=XRES-CELL || ny<CELL || ny>=YRES-CELL)//kill_part if particle is out of bounds
+			if (ID(pmap[y][x]) == i)
+				pmap[y][x] = 0;
+			if (ID(photons[y][x]) == i)
+				photons[y][x] = 0;
+			// kill_part if particle is out of bounds
+			if (nx < CELL || nx >= XRES - CELL || ny < CELL || ny >= YRES - CELL)
 			{
 				kill_part(i);
 				return -1;
@@ -5119,66 +5122,67 @@ void Simulation::RecalcFreeParticles(bool do_life_dec)
 		elementRecount = false;
 }
 
-// void Simulation::CheckStacking()
-// {
-// 	bool excessive_stacking_found = false;
-// 	force_stacking_check = false;
-// 	for (int y = 0; y < YRES; y++)
-// 	{
-// 		for (int x = 0; x < XRES; x++)
-// 		{
-// 			// Use a threshold, since some particle stacking can be normal (e.g. BIZR + FILT)
-// 			// Setting pmap_count[y][x] > NPART means BHOL will form in that spot
-// 			if (pmap_count[y][x]>5)
-// 			{
-// 				if (bmap[y/CELL][x/CELL]==WL_EHOLE)
-// 				{
-// 					// Allow more stacking in E-hole
-// 					if (pmap_count[y][x]>1500)
-// 					{
-// 						pmap_count[y][x] = pmap_count[y][x] + NPART;
-// 						excessive_stacking_found = 1;
-// 					}
-// 				}
-// 				else if (pmap_count[y][x]>1500 || (random_gen()%1600) <= (pmap_count[y][x]+100))
-// 				{
-// 					pmap_count[y][x] = pmap_count[y][x] + NPART;
-// 					excessive_stacking_found = true;
-// 				}
-// 			}
-// 		}
-// 	}
-// 	if (excessive_stacking_found)
-// 	{
-// 		for (int i = 0; i <= parts_lastActiveIndex; i++)
-// 		{
-// 			if (parts[i].type)
-// 			{
-// 				int t = parts[i].type;
-// 				int x = (int)(parts[i].x+0.5f);
-// 				int y = (int)(parts[i].y+0.5f);
-// 				if (x>=0 && y>=0 && x<XRES && y<YRES && !(elements[t].Properties&TYPE_ENERGY))
-// 				{
-// 					if (pmap_count[y][x]>=NPART)
-// 					{
-// 						if (pmap_count[y][x]>NPART)
-// 						{
-// 							create_part(i, x, y, PT_NBHL);
-// 							parts[i].temp = MAX_TEMP;
-// 							parts[i].tmp = pmap_count[y][x]-NPART;//strength of grav field
-// 							if (parts[i].tmp>51200) parts[i].tmp = 51200;
-// 							pmap_count[y][x] = NPART;
-// 						}
-// 						else
-// 						{
-// 							kill_part(i);
-// 						}
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// }
+void Simulation::CheckStacking()
+{
+	bool excessive_stacking_found = false;
+	force_stacking_check = false;
+	for (int y = 0; y < YRES; y++)
+	{
+		for (int x = 0; x < XRES; x++)
+		{
+			// Use a threshold, since some particle stacking can be normal (e.g. BIZR + FILT)
+			// Setting pmap_count[y][x] > NPART means BHOL will form in that spot
+			if (pmap_count[y][x]>5)
+			{
+				if (bmap[y/CELL][x/CELL]==WL_EHOLE)
+				{
+					// Allow more stacking in E-hole
+					if (pmap_count[y][x]>1500)
+					{
+						pmap_count[y][x] = pmap_count[y][x] + NPART;
+						excessive_stacking_found = 1;
+					}
+				}
+				else if (pmap_count[y][x]>1500 || (unsigned int)RNG::Ref().between(0, 1599) <= (pmap_count[y][x]+100))
+				{
+					pmap_count[y][x] = pmap_count[y][x] + NPART;
+					excessive_stacking_found = true;
+				}
+			}
+		}
+	}
+	if (excessive_stacking_found)
+	{
+		for (int i = 0; i <= parts_lastActiveIndex; i++)
+		{
+			if (parts[i].type)
+			{
+				int t = parts[i].type;
+				int x = (int)(parts[i].x+0.5f);
+				int y = (int)(parts[i].y+0.5f);
+				if (x>=0 && y>=0 && x<XRES && y<YRES && !(elements[t].Properties&TYPE_ENERGY))
+				{
+					if (pmap_count[y][x]>=NPART)
+					{
+						if (pmap_count[y][x]>NPART)
+						{
+							create_part(i, x, y, PT_NBHL);
+							parts[i].temp = MAX_TEMP;
+							parts[i].tmp = pmap_count[y][x]-NPART;//strength of grav field
+							if (parts[i].tmp>51200) parts[i].tmp = 51200;
+							pmap_count[y][x] = NPART;
+						}
+						else
+						{
+							kill_part(i);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 
 //updates pmap, gol, and some other simulation stuff (but not particles)
 void Simulation::BeforeSim()
