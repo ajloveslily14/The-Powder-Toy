@@ -19,7 +19,6 @@
 #include "gui/interface/Mouse.h"
 #include "gui/interface/Slider.h"
 #include "gui/interface/Window.h"
-#include "gui/search/Thumbnail.h"
 #include "simulation/SaveRenderer.h"
 #include "simulation/SimulationData.h"
 
@@ -1707,9 +1706,7 @@ void GameView::OnBlur()
 	disableShiftBehaviour();
 	isMouseDown = false;
 	drawMode = DrawPoints;
-	c->MouseUp(0, 0, 0, 1); // tell lua that mouse is up (even if it really isn't)
-	if (GetModifiers())
-		c->KeyRelease(0, 0, false, false, false, false);
+	c->Blur();
 }
 
 void GameView::OnTick(float dt)

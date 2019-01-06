@@ -85,8 +85,8 @@
 #define MTOS_EXPAND(str) #str
 #define MTOS(str) MTOS_EXPAND(str)
 
-#define SERVER "tpt.starcatcher.us"
-#define STATICSERVER "statictpt.starcatcher.us"
+#define SERVER "powdertoy.co.uk"
+#define STATICSERVER "static.powdertoy.co.uk"
 
 #define LOCAL_SAVE_DIR "Saves"
 
@@ -100,9 +100,6 @@
 #ifndef M_GRAV
 #define M_GRAV 6.67300e-1
 #endif
-
-//Number of asynchronous connections used to retrieve thumbnails
-#define IMGCONNS 5
 
 #ifdef RENDERER
 #define MENUSIZE 0
