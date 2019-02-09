@@ -49,9 +49,6 @@ void RequestBroker::assureRunning()
 
 	if(!running)
 	{
-#ifdef DEBUG
-		std::cout << typeid(*this).name() << " Starting background thread for new " << __FUNCTION__ << " request" << std::endl;
-#endif
 		pthread_create(&thumbnailQueueThread, 0, &RequestBroker::thumbnailQueueProcessHelper, this);
 	}
 }
@@ -177,9 +174,6 @@ void RequestBroker::thumbnailQueueProcessTH()
 		//Shutdown after 2 seconds of idle
 		if(time(NULL) - lastAction > 2)
 		{
-#ifdef DEBUG
-			std::cout << typeid(*this).name() << " Idle shutdown" << std::endl;
-#endif
 			break;
 		}
 
