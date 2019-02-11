@@ -7,3 +7,5 @@ int update_finish();
 void update_cleanup();
 
 #endif /* UPDATE_H_ */
+
+#define IGNORE_UPDATES
