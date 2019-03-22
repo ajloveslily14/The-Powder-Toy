@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <locale>
 
-#include "client/HTTP.h"
+#include "client/http/Request.h"
 #include "Format.h"
 #include "LuaScriptInterface.h"
 #include "LuaScriptHelper.h"
@@ -276,7 +276,7 @@ int luatpt_getelement(lua_State *l)
 		t = luaL_optint(l, 1, 1);
 		if (t<0 || t>=PT_NUM)
 			return luaL_error(l, "Unrecognised element number '%d'", t);
-		lua_pushstring(l, luacon_sim->elements[t].Name.c_str());
+		lua_pushstring(l, luacon_sim->elements[t].Name.ToUtf8().c_str());
 	}
 	else
 	{
@@ -687,7 +687,7 @@ int luatpt_set_property(lua_State* l)
 				return luaL_error(l, "Unrecognised element '%s'", name);
 		}
 	}
-	if (lua_isnumber(l, 2) || format == CommandInterface::FormatElement)
+	if (lua_isnumber(l, 2))
 	{
 		if (format == CommandInterface::FormatFloat)
 			f = luaL_optnumber(l, 2, 0);
@@ -697,12 +697,15 @@ int luatpt_set_property(lua_State* l)
 		if (!strcmp(prop, "type") && (t<0 || t>=PT_NUM || !luacon_sim->elements[t].Enabled))
 			return luaL_error(l, "Unrecognised element number '%d'", t);
 	}
-	else
+	else if (lua_isstring(l, 2))
 	{
 		name = luaL_checklstring(l, 2, NULL);
 		if ((t = luacon_sim->GetParticleType(ByteString(name)))==-1)
 			return luaL_error(l, "Unrecognised element '%s'", name);
 	}
+	else
+		luaL_error(l, "Expected number or element name as argument 2");
+
 	if (!lua_isnumber(l, 3) || acount >= 6)
 	{
 		// Got a region
@@ -1347,26 +1350,23 @@ int luatpt_getscript(lua_State* l)
 	int runScript = luaL_optint(l, 3, 0);
 	int confirmPrompt = luaL_optint(l, 4, 1);
 
-	ByteString url = ByteString::Build("http://starcatcher.us/scripts/main.lua?get=", scriptID);
+	ByteString url = ByteString::Build(SCHEME "starcatcher.us/scripts/main.lua?get=", scriptID);
 	if (confirmPrompt && !ConfirmPrompt::Blocking("Do you want to install script?", url.FromUtf8(), "Install"))
 		return 0;
 
-	int ret, len;
-	char *scriptData = http_simple_get(url.c_str(), &ret, &len);
-	if (len <= 0 || !filename)
+	int ret;
+	ByteString scriptData = http::Request::Simple(url, &ret);
+	if (!scriptData.size() || !filename)
 	{
-		free(scriptData);
 		return luaL_error(l, "Server did not return data");
 	}
 	if (ret != 200)
 	{
-		free(scriptData);
-		return luaL_error(l, http_ret_text(ret));
+		return luaL_error(l, http::StatusText(ret));
 	}
 
-	if (!strcmp(scriptData, "Invalid script ID\r\n"))
+	if (!strcmp(scriptData.c_str(), "Invalid script ID\r\n"))
 	{
-		free(scriptData);
 		return luaL_error(l, "Invalid Script ID");
 	}
 
@@ -1381,7 +1381,6 @@ int luatpt_getscript(lua_State* l)
 		}
 		else
 		{
-			free(scriptData);
 			return 0;
 		}
 	}
@@ -1391,11 +1390,10 @@ int luatpt_getscript(lua_State* l)
 	}
 	if (!outputfile)
 	{
-		free(scriptData);
 		return luaL_error(l, "Unable to write to file");
 	}
 
-	fputs(scriptData, outputfile);
+	fputs(scriptData.c_str(), outputfile);
 	fclose(outputfile);
 	outputfile = NULL;
 	if (runScript)

@@ -46,7 +46,7 @@ class GameController::SearchCallback: public ControllerCallback
 	GameController * cc;
 public:
 	SearchCallback(GameController * cc_) { cc = cc_; }
-	virtual void ControllerExit()
+	void ControllerExit() override
 	{
 		if(cc->search->GetLoadedSave())
 		{
@@ -69,7 +69,7 @@ class GameController::SaveOpenCallback: public ControllerCallback
 	GameController * cc;
 public:
 	SaveOpenCallback(GameController * cc_) { cc = cc_; }
-	virtual void ControllerExit()
+	void ControllerExit() override
 	{
 		if(cc->activePreview->GetDoOpen() && cc->activePreview->GetSaveInfo())
 		{
@@ -91,7 +91,7 @@ class GameController::OptionsCallback: public ControllerCallback
 	GameController * cc;
 public:
 	OptionsCallback(GameController * cc_) { cc = cc_; }
-	virtual void ControllerExit()
+	void ControllerExit() override
 	{
 		cc->gameModel->UpdateQuickOptions();
 		Client::Ref().WritePrefs();
@@ -103,7 +103,7 @@ class GameController::TagsCallback: public ControllerCallback
 	GameController * cc;
 public:
 	TagsCallback(GameController * cc_) { cc = cc_; }
-	virtual void ControllerExit()
+	void ControllerExit() override
 	{
 		cc->gameView->NotifySaveChanged(cc->gameModel);
 	}
@@ -114,7 +114,7 @@ class GameController::StampsCallback: public ControllerCallback
 	GameController * cc;
 public:
 	StampsCallback(GameController * cc_) { cc = cc_; }
-	virtual void ControllerExit()
+	void ControllerExit() override
 	{
 		SaveFile *file = cc->localBrowser->GetSave();
 		if (file)
@@ -351,7 +351,7 @@ void GameController::Install()
 	public:
 		GameController * c;
 		InstallConfirmation(GameController * c_) {	c = c_;	}
-		virtual void ConfirmCallback(ConfirmPrompt::DialogueResult result) {
+		void ConfirmCallback(ConfirmPrompt::DialogueResult result) override {
 			if (result == ConfirmPrompt::ResultOkay)
 			{
 				if(Client::Ref().DoInstallation())
@@ -687,7 +687,7 @@ bool GameController::MouseUp(int x, int y, unsigned button, char type)
 						case 't':
 						{
 							// buff is already confirmed to be a number by sign::splitsign
-							Platform::OpenURI(ByteString::Build("http://powdertoy.co.uk/Discussions/Thread/View.html?Thread=", link.ToUtf8()));
+							Platform::OpenURI(ByteString::Build(SCHEME "powdertoy.co.uk/Discussions/Thread/View.html?Thread=", link.ToUtf8()));
 							break;
 						}
 						case 's':
@@ -737,54 +737,54 @@ bool GameController::KeyPress(int key, int scan, bool repeat, bool shift, bool c
 				sim->player.comm = (int)(sim->player.comm)|0x02;
 			}
 			// Go left command
-			if (key == SDLK_LEFT)
+			else if (key == SDLK_LEFT)
 			{
 				sim->player.comm = (int)(sim->player.comm)|0x01;
 			}
 			// Use element command
-			if (key == SDLK_DOWN && ((int)(sim->player.comm)&0x08)!=0x08)
+			else if (key == SDLK_DOWN && ((int)(sim->player.comm)&0x08)!=0x08)
 			{
 				sim->player.comm = (int)(sim->player.comm)|0x08;
 			}
 			// Jump command
-			if (key == SDLK_UP && ((int)(sim->player.comm)&0x04)!=0x04)
+			else if (key == SDLK_UP && ((int)(sim->player.comm)&0x04)!=0x04)
 			{
 				sim->player.comm = (int)(sim->player.comm)|0x04;
 			}
 		}
 
 		// Go right command
-		if (key == SDLK_d)
+		if (scan == SDL_SCANCODE_D)
 		{
 			sim->player2.comm = (int)(sim->player2.comm)|0x02;
 		}
 		// Go left command
-		if (key == SDLK_a)
+		else if (scan == SDL_SCANCODE_A)
 		{
 			sim->player2.comm = (int)(sim->player2.comm)|0x01;
 		}
 		// Use element command
-		if (key == SDLK_s && ((int)(sim->player2.comm)&0x08)!=0x08)
+		else if (scan == SDL_SCANCODE_S && ((int)(sim->player2.comm)&0x08)!=0x08)
 		{
 			sim->player2.comm = (int)(sim->player2.comm)|0x08;
 		}
 		// Jump command
-		if (key == SDLK_w && ((int)(sim->player2.comm)&0x04)!=0x04)
+		else if (scan == SDL_SCANCODE_W && ((int)(sim->player2.comm)&0x04)!=0x04)
 		{
 			sim->player2.comm = (int)(sim->player2.comm)|0x04;
 		}
 
 		if (!sim->elementCount[PT_STKM2] || ctrl)
 		{
-			switch(key)
+			switch(scan)
 			{
-			case 'w':
+			case SDL_SCANCODE_W:
 				SwitchGravity();
 				break;
-			case 'd':
+			case SDL_SCANCODE_D:
 				gameView->SetDebugHUD(!gameView->GetDebugHUD());
 				break;
-			case 's':
+			case SDL_SCANCODE_S:
 				gameView->BeginStampSelection();
 				break;
 			}
@@ -814,25 +814,25 @@ bool GameController::KeyRelease(int key, int scan, bool repeat, bool shift, bool
 			sim->player.pcomm = sim->player.comm;  //Saving last movement
 			sim->player.comm = (int)(sim->player.comm)&12;  //Stop command
 		}
-		if (key == SDLK_UP)
+		else if (key == SDLK_UP)
 		{
 			sim->player.comm = (int)(sim->player.comm)&11;
 		}
-		if (key == SDLK_DOWN)
+		else if (key == SDLK_DOWN)
 		{
 			sim->player.comm = (int)(sim->player.comm)&7;
 		}
 
-		if (key == SDLK_d || key == SDLK_a)
+		if (scan == SDL_SCANCODE_D || scan == SDL_SCANCODE_A)
 		{
 			sim->player2.pcomm = sim->player2.comm;  //Saving last movement
 			sim->player2.comm = (int)(sim->player2.comm)&12;  //Stop command
 		}
-		if (key == SDLK_w)
+		else if (scan == SDL_SCANCODE_W)
 		{
 			sim->player2.comm = (int)(sim->player2.comm)&11;
 		}
-		if (key == SDLK_s)
+		else if (scan == SDL_SCANCODE_S)
 		{
 			sim->player2.comm = (int)(sim->player2.comm)&7;
 		}
@@ -1246,7 +1246,7 @@ void GameController::OpenLocalSaveWindow(bool asCurrent)
 			public:
 				LocalSaveCallback(GameController * _c): c(_c) {}
 				virtual  ~LocalSaveCallback() {}
-				virtual void FileSaved(SaveFile* file)
+				void FileSaved(SaveFile* file) override
 				{
 					c->gameModel->SetSaveFile(file);
 				}
@@ -1311,7 +1311,7 @@ void GameController::OpenLocalBrowse()
 	public:
 		LocalSaveOpenCallback(GameController * _c): c(_c) {}
 		virtual  ~LocalSaveOpenCallback() {};
-		virtual void FileSelected(SaveFile* file)
+		void FileSelected(SaveFile* file) override
 		{
 			c->HistorySnapshot();
 			c->LoadSaveFile(file);
@@ -1364,8 +1364,8 @@ void GameController::OpenColourPicker()
 		GameController * c;
 	public:
 		ColourPickerCallback(GameController * _c): c(_c) {}
-		virtual  ~ColourPickerCallback() {};
-		virtual void ColourPicked(ui::Colour colour)
+		virtual  ~ColourPickerCallback() {}
+		void ColourPicked(ui::Colour colour) override
 		{
 			c->SetColour(colour);
 		}
@@ -1429,7 +1429,7 @@ void GameController::OpenSaveWindow()
 	public:
 		SaveUploadedCallback(GameController * _c): c(_c) {}
 		virtual  ~SaveUploadedCallback() {}
-		virtual void SaveUploaded(SaveInfo save)
+		void SaveUploaded(SaveInfo save) override
 		{
 			save.SetVote(1);
 			save.SetVotesUp(1);
@@ -1477,7 +1477,7 @@ void GameController::SaveAsCurrent()
 	public:
 		SaveUploadedCallback(GameController * _c): c(_c) {}
 		virtual  ~SaveUploadedCallback() {}
-		virtual void SaveUploaded(SaveInfo save)
+		void SaveUploaded(SaveInfo save) override
 		{
 			c->LoadSave(&save);
 		}
@@ -1566,7 +1566,7 @@ void GameController::ReloadSim()
 	}
 }
 
-ByteString GameController::ElementResolve(int type, int ctype)
+String GameController::ElementResolve(int type, int ctype)
 {
 	if(gameModel && gameModel->GetSimulation())
 	{
@@ -1616,7 +1616,7 @@ void GameController::NotifyNewNotification(Client * sender, std::pair<String, By
 		LinkNotification(ByteString link_, String message) : Notification(message), link(link_) {}
 		virtual ~LinkNotification() {}
 
-		virtual void Action()
+		void Action() override
 		{
 			Platform::OpenURI(link);
 		}
@@ -1630,7 +1630,7 @@ void GameController::NotifyUpdateAvailable(Client * sender)
 	public:
 		GameController * c;
 		UpdateConfirmation(GameController * c_) {	c = c_;	}
-		virtual void ConfirmCallback(ConfirmPrompt::DialogueResult result) {
+		void ConfirmCallback(ConfirmPrompt::DialogueResult result) override {
 			if (result == ConfirmPrompt::ResultOkay)
 			{
 				c->RunUpdater();
@@ -1646,7 +1646,7 @@ void GameController::NotifyUpdateAvailable(Client * sender)
 		UpdateNotification(GameController * c, String message) : Notification(message), c(c) {}
 		virtual ~UpdateNotification() {}
 
-		virtual void Action()
+		void Action() override
 		{
 			UpdateInfo info = Client::Ref().GetUpdateInfo();
 			StringBuilder updateMessage;
@@ -1716,9 +1716,9 @@ void GameController::RunUpdater()
 #else
 
 #ifdef UPDATESERVER
-	ByteString file = ByteString::Build("https://", UPDATESERVER, Client::Ref().GetUpdateInfo().File);
+	ByteString file = ByteString::Build(SCHEME, UPDATESERVER, Client::Ref().GetUpdateInfo().File);
 #else
-	ByteString file = ByteString::Build("https://", SERVER, Client::Ref().GetUpdateInfo().File);
+	ByteString file = ByteString::Build(SCHEME, SERVER, Client::Ref().GetUpdateInfo().File);
 #endif
 
 	Platform::OpenURI(file);

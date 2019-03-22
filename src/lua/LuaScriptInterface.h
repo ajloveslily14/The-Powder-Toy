@@ -121,6 +121,9 @@ class LuaScriptInterface: public CommandInterface
 	static int renderer_grid(lua_State * l);
 	static int renderer_debugHUD(lua_State * l);
 	static int renderer_depth3d(lua_State * l);
+	static int renderer_zoomEnabled(lua_State *l);
+	static int renderer_zoomWindowInfo(lua_State *l);
+	static int renderer_zoomScopeInfo(lua_State *l);
 
 	//Elements
 	void initElementsAPI();
@@ -185,13 +188,13 @@ public:
 	lua_State *l;
 	LuaScriptInterface(GameController * c, GameModel * m);
 
-	virtual void OnTick();
-	virtual bool HandleEvent(LuaEvents::EventTypes eventType, Event * event);
+	void OnTick() override;
+	bool HandleEvent(LuaEvents::EventTypes eventType, Event * event) override;
 
-	virtual void Init();
-	virtual void SetWindow(ui::Window * window);
-	virtual int Command(String command);
-	virtual String FormatCommand(String command);
+	void Init();
+	void SetWindow(ui::Window * window);
+	int Command(String command) override;
+	String FormatCommand(String command) override;
 	virtual ~LuaScriptInterface();
 };
 

@@ -23,14 +23,15 @@ class OptionsView: public ui::Window {
 	ui::Checkbox * resizable;
 	ui::Checkbox * fullscreen;
 	ui::Checkbox * altFullscreen;
+	ui::Checkbox * forceIntegerScaling;
 	ui::Checkbox * fastquit;
 	ui::Checkbox * showAvatars;
 public:
 	OptionsView();
 	void NotifySettingsChanged(OptionsModel * sender);
 	void AttachController(OptionsController * c_);
-	void OnDraw();
-	void OnTryExit(ExitMethod method);
+	void OnDraw() override;
+	void OnTryExit(ExitMethod method) override;
 	virtual ~OptionsView();
 };
 

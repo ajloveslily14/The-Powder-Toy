@@ -6,7 +6,7 @@
 #include "PreviewView.h"
 #include "client/SaveInfo.h"
 #include "gui/preview/Comment.h"
-#include "client/Download.h"
+#include "client/http/Request.h"
 
 using namespace std;
 
@@ -23,9 +23,9 @@ class PreviewModel {
 	void notifyCommentsPageChanged();
 	void notifyCommentBoxEnabledChanged();
 
-	Download * saveDataDownload;
-	Download * saveInfoDownload;
-	Download * commentsDownload;
+	http::Request * saveDataDownload;
+	http::Request * saveInfoDownload;
+	http::Request * commentsDownload;
 	int saveID;
 	int saveDate;
 
@@ -57,8 +57,8 @@ public:
 	void Update();
 	void ClearComments();
 	void OnSaveReady();
-	bool ParseSaveInfo(char * saveInfoResponse);
-	bool ParseComments(char * commentsResponse);
+	bool ParseSaveInfo(ByteString &saveInfoResponse);
+	bool ParseComments(ByteString &commentsResponse);
 	virtual ~PreviewModel();
 };
 

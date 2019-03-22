@@ -21,15 +21,15 @@ class SaveSelectedAction: public ui::SaveButtonAction
 	FileBrowserActivity * a;
 public:
 	SaveSelectedAction(FileBrowserActivity * _a) { a = _a; }
-	virtual void ActionCallback(ui::SaveButton * sender)
+	void ActionCallback(ui::SaveButton * sender) override
 	{
 		a->SelectSave(sender->GetSaveFile());
 	}
-	virtual void AltActionCallback(ui::SaveButton * sender)
+	void AltActionCallback(ui::SaveButton * sender) override
 	{
 		a->RenameSave(sender->GetSaveFile());
 	}
-	virtual void AltActionCallback2(ui::SaveButton * sender)
+	void AltActionCallback2(ui::SaveButton * sender) override
 	{
 		a->DeleteSave(sender->GetSaveFile());
 	}
@@ -42,17 +42,17 @@ class LoadFilesTask: public Task
 	ByteString search;
 	std::vector<SaveFile*> saveFiles;
 
-	virtual void before()
+	void before() override
 	{
 
 	}
 
-	virtual void after()
+	void after() override
 	{
 
 	}
 
-	virtual bool doWork()
+	bool doWork() override
 	{
 		std::vector<ByteString> files = Client::Ref().DirectorySearch(directory, search, ".cps");
 		std::sort(files.rbegin(), files.rend(), [](ByteString a, ByteString b) { return a.ToLower() < b.ToLower(); });
@@ -69,7 +69,7 @@ class LoadFilesTask: public Task
 				saveFiles.push_back(saveFile);
 
 				ByteString filename = (*iter).SplitFromEndBy(PATH_SEP).After();
-				filename = filename.SplitBy('.').Before();
+				filename = filename.SplitFromEndBy('.').Before();
 				saveFile->SetDisplayName(filename.FromUtf8());
 			}
 			catch(std::exception & e)
@@ -99,13 +99,13 @@ class FileBrowserActivity::SearchAction: public ui::TextboxAction
 public:
 	FileBrowserActivity * a;
 	SearchAction(FileBrowserActivity * a) : a(a) {}
-	virtual void TextChangedCallback(ui::Textbox * sender) {
+	void TextChangedCallback(ui::Textbox * sender) override {
 		a->DoSearch(sender->GetText().ToUtf8());
 	}
 };
 
 FileBrowserActivity::FileBrowserActivity(ByteString directory, FileSelectedCallback * callback):
-	WindowActivity(ui::Point(-1, -1), ui::Point(450, 300)),
+	WindowActivity(ui::Point(-1, -1), ui::Point(500, 350)),
 	callback(callback),
 	directory(directory),
 	totalFiles(0)
@@ -142,7 +142,7 @@ FileBrowserActivity::FileBrowserActivity(ByteString directory, FileSelectedCallb
 
 	buttonXOffset = 0;
 	buttonYOffset = 0;
-	buttonAreaWidth = itemList->Size.X;
+	buttonAreaWidth = itemList->Size.X - 5;
 	buttonAreaHeight = itemList->Size.Y;// - buttonYOffset - 18;
 	buttonWidth = (buttonAreaWidth/filesX) - buttonPadding*2;
 	buttonHeight = (buttonAreaHeight/filesY) - buttonPadding*2;

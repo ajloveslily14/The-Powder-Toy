@@ -15,7 +15,7 @@ class ElementSearchActivity::ToolAction: public ui::ButtonAction
 public:
 	Tool * tool;
 	ToolAction(ElementSearchActivity * a, Tool * tool) : a(a), tool(tool) {  }
-	void ActionCallback(ui::Button * sender_)
+	void ActionCallback(ui::Button * sender_) override
 	{
 		ToolButton *sender = (ToolButton*)sender_;
 		if(sender->GetSelectionState() >= 0 && sender->GetSelectionState() <= 2)
@@ -47,7 +47,7 @@ ElementSearchActivity::ElementSearchActivity(GameController * gameController, st
 		ElementSearchActivity * a;
 	public:
 		SearchAction(ElementSearchActivity * a) : a(a) {}
-		virtual void TextChangedCallback(ui::Textbox * sender) {
+		void TextChangedCallback(ui::Textbox * sender) override {
 			a->searchTools(sender->GetText());
 		}
 	};
@@ -63,7 +63,7 @@ ElementSearchActivity::ElementSearchActivity(GameController * gameController, st
 			ElementSearchActivity * a;
 		public:
 			CloseAction(ElementSearchActivity * a) : a(a) {  }
-			void ActionCallback(ui::Button * sender_)
+			void ActionCallback(ui::Button * sender_) override
 			{
 				a->exit = true;
 			}
@@ -74,7 +74,7 @@ ElementSearchActivity::ElementSearchActivity(GameController * gameController, st
 			ElementSearchActivity * a;
 		public:
 			OKAction(ElementSearchActivity * a) : a(a) {  }
-			void ActionCallback(ui::Button * sender_)
+			void ActionCallback(ui::Button * sender_) override
 			{
 				if(a->GetFirstResult())
 					a->SetActiveTool(0, a->GetFirstResult());
@@ -104,7 +104,7 @@ void ElementSearchActivity::searchTools(String query)
 	ui::Point viewPosition = searchField->Position + ui::Point(2+0, searchField->Size.Y+2+8);
 	ui::Point current = ui::Point(0, 0);
 
-	ByteString queryLower = query.ToUtf8().ToLower();
+	String queryLower = query.ToLower();
 
 	std::vector<Tool *> matches;
 	std::vector<Tool *> frontmatches;
@@ -112,7 +112,7 @@ void ElementSearchActivity::searchTools(String query)
 
 	for(std::vector<Tool*>::const_iterator iter = tools.begin(), end = tools.end(); iter != end; ++iter)
 	{
-		ByteString nameLower = (*iter)->GetName().ToLower();
+		String nameLower = (*iter)->GetName().ToLower();
 		if(nameLower == queryLower)
 			exactmatches.push_back(*iter);
 		else if(nameLower.BeginsWith(queryLower))

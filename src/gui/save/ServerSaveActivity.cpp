@@ -4,7 +4,6 @@
 #include "gui/interface/Textbox.h"
 #include "gui/interface/Button.h"
 #include "gui/interface/Checkbox.h"
-#include "client/requestbroker/RequestBroker.h"
 #include "gui/dialogues/ErrorMessage.h"
 #include "gui/dialogues/SaveIDMessage.h"
 #include "gui/dialogues/ConfirmPrompt.h"
@@ -14,13 +13,14 @@
 #include "gui/Style.h"
 #include "client/GameSave.h"
 #include "images.h"
+#include "client/ThumbnailRendererTask.h"
 
 class ServerSaveActivity::CancelAction: public ui::ButtonAction
 {
 	ServerSaveActivity * a;
 public:
 	CancelAction(ServerSaveActivity * a) : a(a) {}
-	virtual void ActionCallback(ui::Button * sender)
+	void ActionCallback(ui::Button * sender) override
 	{
 		a->Exit();
 	}
@@ -31,7 +31,7 @@ class ServerSaveActivity::SaveAction: public ui::ButtonAction
 	ServerSaveActivity * a;
 public:
 	SaveAction(ServerSaveActivity * a) : a(a) {}
-	virtual void ActionCallback(ui::Button * sender)
+	void ActionCallback(ui::Button * sender) override
 	{
 		a->Save();
 	}
@@ -42,7 +42,7 @@ class ServerSaveActivity::PublishingAction: public ui::ButtonAction
 	ServerSaveActivity * a;
 public:
 	PublishingAction(ServerSaveActivity * a) : a(a) {}
-	virtual void ActionCallback(ui::Button * sender)
+	void ActionCallback(ui::Button * sender) override
 	{
 		a->ShowPublishingInfo();
 	}
@@ -53,7 +53,7 @@ class ServerSaveActivity::RulesAction: public ui::ButtonAction
 	ServerSaveActivity * a;
 public:
 	RulesAction(ServerSaveActivity * a) : a(a) {}
-	virtual void ActionCallback(ui::Button * sender)
+	void ActionCallback(ui::Button * sender) override
 	{
 		a->ShowRules();
 	}
@@ -64,7 +64,7 @@ class ServerSaveActivity::NameChangedAction: public ui::TextboxAction
 public:
 	ServerSaveActivity * a;
 	NameChangedAction(ServerSaveActivity * a) : a(a) {}
-	virtual void TextChangedCallback(ui::Textbox * sender) {
+	void TextChangedCallback(ui::Textbox * sender) override {
 		a->CheckName(sender->GetText());
 	}
 };
@@ -73,17 +73,17 @@ class SaveUploadTask: public Task
 {
 	SaveInfo save;
 
-	virtual void before()
+	void before() override
 	{
 
 	}
 
-	virtual void after()
+	void after() override
 	{
 
 	}
 
-	virtual bool doWork()
+	bool doWork() override
 	{
 		notifyProgress(-1);
 		return Client::Ref().UploadSave(save) == RequestOkay;
@@ -104,7 +104,7 @@ public:
 
 ServerSaveActivity::ServerSaveActivity(SaveInfo save, ServerSaveActivity::SaveUploadedCallback * callback) :
 	WindowActivity(ui::Point(-1, -1), ui::Point(440, 200)),
-	thumbnail(NULL),
+	thumbnailRenderer(nullptr),
 	save(save),
 	callback(callback),
 	saveUploadTask(NULL)
@@ -183,13 +183,16 @@ ServerSaveActivity::ServerSaveActivity(SaveInfo save, ServerSaveActivity::SaveUp
 	RulesButton->SetActionCallback(new RulesAction(this));
 	AddComponent(RulesButton);
 
-	if(save.GetGameSave())
-		RequestBroker::Ref().RenderThumbnail(save.GetGameSave(), false, true, (Size.X/2)-16, -1, this);
+	if (save.GetGameSave())
+	{
+		thumbnailRenderer = new ThumbnailRendererTask(save.GetGameSave(), (Size.X/2)-16, -1, false, false, true);
+		thumbnailRenderer->Start();
+	}
 }
 
 ServerSaveActivity::ServerSaveActivity(SaveInfo save, bool saveNow, ServerSaveActivity::SaveUploadedCallback * callback) :
 	WindowActivity(ui::Point(-1, -1), ui::Point(200, 50)),
-	thumbnail(NULL),
+	thumbnailRenderer(nullptr),
 	save(save),
 	callback(callback),
 	saveUploadTask(NULL)
@@ -230,7 +233,7 @@ void ServerSaveActivity::Save()
 	public:
 		ServerSaveActivity * a;
 		PublishConfirmation(ServerSaveActivity * a) : a(a) {}
-		virtual void ConfirmCallback(ConfirmPrompt::DialogueResult result) {
+		void ConfirmCallback(ConfirmPrompt::DialogueResult result) override {
 			if (result == ConfirmPrompt::ResultOkay)
 			{
 				a->Exit();
@@ -401,6 +404,16 @@ void ServerSaveActivity::CheckName(String newname)
 
 void ServerSaveActivity::OnTick(float dt)
 {
+	if (thumbnailRenderer)
+	{
+		thumbnailRenderer->Poll();
+		if (thumbnailRenderer->GetDone())
+		{
+			thumbnail = thumbnailRenderer->Finish();
+			thumbnailRenderer = nullptr;
+		}
+	}
+
 	if(saveUploadTask)
 		saveUploadTask->Poll();
 }
@@ -417,21 +430,17 @@ void ServerSaveActivity::OnDraw()
 
 	if(thumbnail)
 	{
-		g->draw_image(thumbnail, Position.X+(Size.X/2)+((Size.X/2)-thumbnail->Width)/2, Position.Y+25, 255);
+		g->draw_image(thumbnail.get(), Position.X+(Size.X/2)+((Size.X/2)-thumbnail->Width)/2, Position.Y+25, 255);
 		g->drawrect(Position.X+(Size.X/2)+((Size.X/2)-thumbnail->Width)/2, Position.Y+25, thumbnail->Width, thumbnail->Height, 180, 180, 180, 255);
 	}
 }
 
-void ServerSaveActivity::OnResponseReady(void * imagePtr, int identifier)
-{
-	delete thumbnail;
-	thumbnail = (VideoBuffer *)imagePtr;
-}
-
 ServerSaveActivity::~ServerSaveActivity()
 {
-	RequestBroker::Ref().DetachRequestListener(this);
+	if (thumbnailRenderer)
+	{
+		thumbnailRenderer->Abandon();
+	}
 	delete saveUploadTask;
 	delete callback;
-	delete thumbnail;
 }

@@ -4,7 +4,6 @@
 #include "AvatarButton.h"
 #include "Format.h"
 #include "client/Client.h"
-#include "client/requestbroker/RequestBroker.h"
 #include "graphics/Graphics.h"
 #include "ContextMenu.h"
 #include "Keys.h"
@@ -14,7 +13,6 @@ namespace ui {
 
 AvatarButton::AvatarButton(Point position, Point size, ByteString username):
 	Component(position, size),
-	avatar(NULL),
 	name(username),
 	tried(false),
 	actionCallback(NULL)
@@ -24,9 +22,12 @@ AvatarButton::AvatarButton(Point position, Point size, ByteString username):
 
 AvatarButton::~AvatarButton()
 {
-	RequestBroker::Ref().DetachRequestListener(this);
-	delete avatar;
 	delete actionCallback;
+}
+
+void AvatarButton::OnResponse(std::unique_ptr<VideoBuffer> Avatar)
+{
+	avatar = std::move(Avatar);
 }
 
 void AvatarButton::Tick(float dt)
@@ -34,18 +35,11 @@ void AvatarButton::Tick(float dt)
 	if(!avatar && !tried && name.size() > 0)
 	{
 		tried = true;
-		RequestBroker::Ref().RetrieveAvatar(name, Size.X, Size.Y, this);
+		RequestSetup(name, Size.X, Size.Y);
+		RequestStart();
 	}
-}
 
-void AvatarButton::OnResponseReady(void * imagePtr, int identifier)
-{
-	VideoBuffer * image = (VideoBuffer*)imagePtr;
-	if(image)
-	{
-		delete avatar;
-		avatar = image;
-	}
+	RequestPoll();
 }
 
 void AvatarButton::Draw(const Point& screenPos)
@@ -54,7 +48,7 @@ void AvatarButton::Draw(const Point& screenPos)
 
 	if(avatar)
 	{
-		g->draw_image(avatar, screenPos.X, screenPos.Y, 255);
+		g->draw_image(avatar.get(), screenPos.X, screenPos.Y, 255);
 	}
 }
 

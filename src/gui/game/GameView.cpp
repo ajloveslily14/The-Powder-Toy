@@ -72,7 +72,7 @@ public:
 			}
 		}
 	}
-	virtual void OnMouseUnclick(int x, int y, unsigned int button)
+	void OnMouseUnclick(int x, int y, unsigned int button) override
 	{
 		if(isButtonDown)
 		{
@@ -84,22 +84,18 @@ public:
 		ui::Button::OnMouseUnclick(x, y, button);
 
 	}
-	virtual void OnMouseHover(int x, int y, int dx, int dy)
+	void OnMouseHover(int x, int y) override
 	{
 		SetToolTip(x, y);
 	}
-	virtual void OnMouseHover(int x, int y)
-	{
-		SetToolTip(x, y);
-	}
-	virtual void OnMouseEnter(int x, int y)
+	void OnMouseEnter(int x, int y) override
 	{
 		isMouseInside = true;
 		if(!Enabled)
 			return;
 		SetToolTip(x, y);
 	}
-	virtual void TextPosition(String ButtonText)
+	void TextPosition(String ButtonText) override
 	{
 		ui::Button::TextPosition(ButtonText);
 		textPosition.X += 3;
@@ -109,7 +105,7 @@ public:
 		toolTip = newToolTip1;
 		toolTip2 = newToolTip2;
 	}
-	virtual void OnMouseClick(int x, int y, unsigned int button)
+	void OnMouseClick(int x, int y, unsigned int button) override
 	{
 		ui::Button::OnMouseClick(x, y, button);
 		rightDown = false;
@@ -133,7 +129,7 @@ public:
 		if(splitActionCallback)
 			splitActionCallback->ActionCallbackLeft(this);
 	}
-	void Draw(const ui::Point& screenPos)
+	void Draw(const ui::Point& screenPos) override
 	{
 		ui::Button::Draw(screenPos);
 		Graphics * g = GetGraphics();
@@ -213,7 +209,7 @@ GameView::GameView():
 		GameView * v;
 	public:
 		SearchAction(GameView * _v) { v = _v; }
-		void ActionCallback(ui::Button * sender)
+		void ActionCallback(ui::Button * sender) override
 		{
 			if(v->CtrlBehaviour())
 				v->c->OpenLocalBrowse();
@@ -241,11 +237,11 @@ GameView::GameView():
 		GameView * v;
 	public:
 		ReloadAction(GameView * _v) { v = _v; }
-		void ActionCallback(ui::Button * sender)
+		void ActionCallback(ui::Button * sender) override
 		{
 			v->c->ReloadSim();
 		}
-		void AltActionCallback(ui::Button * sender)
+		void AltActionCallback(ui::Button * sender) override
 		{
 			v->c->OpenSavePreview();
 		}
@@ -262,14 +258,14 @@ GameView::GameView():
 		GameView * v;
 	public:
 		SaveSimulationAction(GameView * _v) { v = _v; }
-		void ActionCallbackRight(ui::Button * sender)
+		void ActionCallbackRight(ui::Button * sender) override
 		{
 			if(v->CtrlBehaviour() || !Client::Ref().GetAuthUser().UserID)
 				v->c->OpenLocalSaveWindow(false);
 			else
 				v->c->OpenSaveWindow();
 		}
-		void ActionCallbackLeft(ui::Button * sender)
+		void ActionCallbackLeft(ui::Button * sender) override
 		{
 			if(v->CtrlBehaviour() || !Client::Ref().GetAuthUser().UserID)
 				v->c->OpenLocalSaveWindow(true);
@@ -290,7 +286,7 @@ GameView::GameView():
 		GameView * v;
 	public:
 		UpVoteAction(GameView * _v) { v = _v; }
-		void ActionCallback(ui::Button * sender)
+		void ActionCallback(ui::Button * sender) override
 		{
 			v->c->Vote(1);
 		}
@@ -308,7 +304,7 @@ GameView::GameView():
 		GameView * v;
 	public:
 		DownVoteAction(GameView * _v) { v = _v; }
-		void ActionCallback(ui::Button * sender)
+		void ActionCallback(ui::Button * sender) override
 		{
 			v->c->Vote(-1);
 		}
@@ -326,7 +322,7 @@ GameView::GameView():
 		GameView * v;
 	public:
 		TagSimulationAction(GameView * _v) { v = _v; }
-		void ActionCallback(ui::Button * sender)
+		void ActionCallback(ui::Button * sender) override
 		{
 			v->c->OpenTags();
 		}
@@ -343,7 +339,7 @@ GameView::GameView():
 		GameView * v;
 	public:
 		ClearSimAction(GameView * _v) { v = _v; }
-		void ActionCallback(ui::Button * sender)
+		void ActionCallback(ui::Button * sender) override
 		{
 			v->c->ClearSim();
 		}
@@ -359,11 +355,11 @@ GameView::GameView():
 		GameView * v;
 	public:
 		LoginAction(GameView * _v) { v = _v; }
-		void ActionCallbackLeft(ui::Button * sender)
+		void ActionCallbackLeft(ui::Button * sender) override
 		{
 			v->c->OpenLogin();
 		}
-		void ActionCallbackRight(ui::Button * sender)
+		void ActionCallbackRight(ui::Button * sender) override
 		{
 			v->c->OpenProfile();
 		}
@@ -379,7 +375,7 @@ GameView::GameView():
 		GameView * v;
 	public:
 		SimulationOptionAction(GameView * _v) { v = _v; }
-		void ActionCallback(ui::Button * sender)
+		void ActionCallback(ui::Button * sender) override
 		{
 			v->c->OpenOptions();
 		}
@@ -395,7 +391,7 @@ GameView::GameView():
 		GameView * v;
 	public:
 		DisplayModeAction(GameView * _v) { v = _v; }
-		void ActionCallback(ui::Button * sender)
+		void ActionCallback(ui::Button * sender) override
 		{
 			v->c->OpenRenderOptions();
 		}
@@ -411,7 +407,7 @@ GameView::GameView():
 		GameView * v;
 	public:
 		PauseAction(GameView * _v) { v = _v; }
-		void ActionCallback(ui::Button * sender)
+		void ActionCallback(ui::Button * sender) override
 		{
 			v->c->SetPaused(sender->GetToggleState());
 		}
@@ -427,7 +423,7 @@ GameView::GameView():
 		GameView * v;
 	public:
 		ElementSearchAction(GameView * _v) { v = _v; }
-		void ActionCallback(ui::Button * sender)
+		void ActionCallback(ui::Button * sender) override
 		{
 			v->c->OpenElementSearch();
 		}
@@ -442,7 +438,7 @@ GameView::GameView():
 		GameView * v;
 	public:
 		ColourPickerAction(GameView * _v) { v = _v; }
-		void ActionCallback(ui::Button * sender)
+		void ActionCallback(ui::Button * sender) override
 		{
 			v->c->OpenColourPicker();
 		}
@@ -484,7 +480,7 @@ public:
 		else
 			needsClick = false;
 	}
-	void MouseEnterCallback(ui::Button * sender)
+	void MouseEnterCallback(ui::Button * sender) override
 	{
 		// don't immediately change the active menu, the actual set is done inside GameView::OnMouseMove
 		// if we change it here it causes components to be removed, which causes the window to stop sending events
@@ -492,7 +488,7 @@ public:
 		if(!needsClick && !v->GetMouseDown())
 			v->SetActiveMenuDelayed(menuID);
 	}
-	void ActionCallback(ui::Button * sender)
+	void ActionCallback(ui::Button * sender) override
 	{
 		if (needsClick)
 			v->c->SetActiveMenu(menuID);
@@ -506,7 +502,7 @@ class GameView::OptionAction: public ui::ButtonAction
 	QuickOption * option;
 public:
 	OptionAction(QuickOption * _option) { option = _option; }
-	void ActionCallback(ui::Button * sender)
+	void ActionCallback(ui::Button * sender) override
 	{
 		option->Perform();
 	}
@@ -517,7 +513,7 @@ class GameView::OptionListener: public QuickOptionListener
 	ui::Button * button;
 public:
 	OptionListener(ui::Button * _button) { button = _button; }
-	virtual void OnValueChanged(QuickOption * option)
+	void OnValueChanged(QuickOption * option) override
 	{
 		switch(option->GetType())
 		{
@@ -537,7 +533,7 @@ class GameView::ToolAction: public ui::ButtonAction
 public:
 	Tool * tool;
 	ToolAction(GameView * _v, Tool * tool_) { v = _v; tool = tool_; }
-	void ActionCallback(ui::Button * sender_)
+	void ActionCallback(ui::Button * sender_) override
 	{
 		ToolButton *sender = (ToolButton*)sender_;
 		if (v->ShiftBehaviour() && v->CtrlBehaviour() && !v->AltBehaviour())
@@ -715,7 +711,7 @@ void GameView::NotifyActiveToolsChanged(GameModel * sender)
 		if (!active->GetIdentifier().Contains("_PT_"))
 			ren->findingElement = 0;
 		else
-			ren->findingElement = sender->GetActiveTool(0)->GetToolID()%256;
+			ren->findingElement = sender->GetActiveTool(0)->GetToolID();
 	}
 }
 
@@ -832,7 +828,7 @@ void GameView::NotifyColourPresetsChanged(GameModel * sender)
 	public:
 		int preset;
 		ColourPresetAction(GameView * _v, int preset) : preset(preset) { v = _v; }
-		void ActionCallback(ui::Button * sender_)
+		void ActionCallback(ui::Button * sender_) override
 		{
 			v->c->SetActiveColourPreset(preset);
 			v->c->SetColour(sender_->Appearance.BackgroundInactive);
@@ -1405,9 +1401,9 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 			case SDLK_DOWN:
 				c->TranslateSave(ui::Point(0, 1));
 				return;
-			case 'r':
-				if (repeat)
-					return;
+			}
+			if (scan == SDL_SCANCODE_R && !repeat)
+			{
 				if (ctrl && shift)
 				{
 					//Vertical flip
@@ -1430,29 +1426,18 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 
 	if (repeat)
 		return;
-	if (scan == SDL_SCANCODE_GRAVE)
+	bool didKeyShortcut = true;
+	switch(scan)
 	{
+	case SDL_SCANCODE_GRAVE:
+		SDL_StopTextInput();
+		SDL_StartTextInput();
 		c->ShowConsole();
-		return;
-	}
-	switch(key)
-	{
-	case SDLK_LALT:
-	case SDLK_RALT:
-		enableAltBehaviour();
 		break;
-	case SDLK_LCTRL:
-	case SDLK_RCTRL:
-		enableCtrlBehaviour();
-		break;
-	case SDLK_LSHIFT:
-	case SDLK_RSHIFT:
-		enableShiftBehaviour();
-		break;
-	case ' ': //Space
+	case SDL_SCANCODE_SPACE: //Space
 		c->SetPaused();
 		break;
-	case 'z':
+	case SDL_SCANCODE_Z:
 		if (selectMode != SelectNone && isMouseDown)
 			break;
 		if (ctrl && !isMouseDown)
@@ -1469,11 +1454,8 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 			c->SetZoomEnabled(true);
 		}
 		break;
-	case SDLK_TAB: //Tab
-		c->ChangeBrush();
-		break;
-	case 'p':
-	case SDLK_F2:
+	case SDL_SCANCODE_P:
+	case SDL_SCANCODE_F2:
 		if (ctrl)
 		{
 			if (shift)
@@ -1484,13 +1466,13 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 		else
 			screenshot();
 		break;
-	case SDLK_F3:
+	case SDL_SCANCODE_F3:
 		SetDebugHUD(!GetDebugHUD());
 		break;
-	case SDLK_F5:
+	case SDL_SCANCODE_F5:
 		c->ReloadSim();
 		break;
-	case 'a':
+	case SDL_SCANCODE_A:
 		if ((Client::Ref().GetAuthUser().UserElevation == User::ElevationModerator
 		     || Client::Ref().GetAuthUser().UserElevation == User::ElevationAdmin) && ctrl)
 		{
@@ -1498,26 +1480,26 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 			new InformationMessage("Save authorship info", authorString.FromUtf8(), true);
 		}
 		break;
-	case 'r':
+	case SDL_SCANCODE_R:
 		if (ctrl)
 			c->ReloadSim();
 		break;
-	case 'e':
+	case SDL_SCANCODE_E:
 		c->OpenElementSearch();
 		break;
-	case 'f':
+	case SDL_SCANCODE_F:
 		if (ctrl)
 		{
 			Tool *active = c->GetActiveTool(0);
-			if (!active->GetIdentifier().Contains("_PT_") || ren->findingElement == active->GetToolID()%256)
+			if (!active->GetIdentifier().Contains("_PT_") || (ren->findingElement == active->GetToolID()))
 				ren->findingElement = 0;
 			else
-				ren->findingElement = active->GetToolID()%256;
+				ren->findingElement = active->GetToolID();
 		}
 		else
 			c->FrameStep();
 		break;
-	case 'g':
+	case SDL_SCANCODE_G:
 		if (ctrl)
 			c->ShowGravityGrid();
 		else if(shift)
@@ -1525,13 +1507,13 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 		else
 			c->AdjustGridSize(1);
 		break;
-	case SDLK_F1:
+	case SDL_SCANCODE_F1:
 		if(!introText)
 			introText = 8047;
 		else
 			introText = 0;
 		break;
-	case 'h':
+	case SDL_SCANCODE_H:
 		if(ctrl)
 		{
 			if(!introText)
@@ -1542,7 +1524,7 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 		else
 			showHud = !showHud;
 		break;
-	case 'b':
+	case SDL_SCANCODE_B:
 		if(ctrl)
 			c->SetDecoration();
 		else
@@ -1555,7 +1537,7 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 				c->SetActiveMenu(SC_DECO);
 			}
 		break;
-	case 'y':
+	case SDL_SCANCODE_Y:
 		if (ctrl)
 		{
 			c->HistoryForward();
@@ -1565,23 +1547,23 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 			c->SwitchAir();
 		}
 		break;
-	case SDLK_ESCAPE:
-	case 'q':
+	case SDL_SCANCODE_ESCAPE:
+	case SDL_SCANCODE_Q:
 		ui::Engine::Ref().ConfirmExit();
 		break;
-	case 'u':
+	case SDL_SCANCODE_U:
 		c->ToggleAHeat();
 		break;
-	case 'n':
+	case SDL_SCANCODE_N:
 		c->ToggleNewtonianGravity();
 		break;
-	case '=':
+	case SDL_SCANCODE_EQUALS:
 		if(ctrl)
 			c->ResetSpark();
 		else
 			c->ResetAir();
 		break;
-	case 'c':
+	case SDL_SCANCODE_C:
 		if(ctrl)
 		{
 			selectMode = SelectCopy;
@@ -1591,7 +1573,7 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 			buttonTipShow = 120;
 		}
 		break;
-	case 'x':
+	case SDL_SCANCODE_X:
 		if(ctrl)
 		{
 			selectMode = SelectCut;
@@ -1601,7 +1583,7 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 			buttonTipShow = 120;
 		}
 		break;
-	case 'v':
+	case SDL_SCANCODE_V:
 		if (ctrl)
 		{
 			if (c->LoadClipboard())
@@ -1611,7 +1593,7 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 			}
 		}
 		break;
-	case 'l':
+	case SDL_SCANCODE_L:
 	{
 		std::vector<ByteString> stampList = Client::Ref().GetStamps(0, 1);
 		if (stampList.size())
@@ -1624,42 +1606,55 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 			break;
 		}
 	}
-	case 'k':
+	case SDL_SCANCODE_K:
 		selectMode = SelectNone;
 		selectPoint1 = selectPoint2 = ui::Point(-1, -1);
 		c->OpenStamps();
 		break;
-	case ']':
+	case SDL_SCANCODE_RIGHTBRACKET:
 		if(zoomEnabled && !zoomCursorFixed)
 			c->AdjustZoomSize(1, !alt);
 		else
 			c->AdjustBrushSize(1, !alt, shiftBehaviour, ctrlBehaviour);
 		break;
-	case '[':
+	case SDL_SCANCODE_LEFTBRACKET:
 		if(zoomEnabled && !zoomCursorFixed)
 			c->AdjustZoomSize(-1, !alt);
 		else
 			c->AdjustBrushSize(-1, !alt, shiftBehaviour, ctrlBehaviour);
 		break;
-	case 'i':
+	case SDL_SCANCODE_I:
 		if(ctrl)
 			c->Install();
 		else
 			c->InvertAirSim();
 		break;
-	case ';':
+	case SDL_SCANCODE_SEMICOLON:
 		if (ctrl)
+			c->SetReplaceModeFlags(c->GetReplaceModeFlags()^SPECIFIC_DELETE);
+		else
+			c->SetReplaceModeFlags(c->GetReplaceModeFlags()^REPLACE_MODE);
+		break;
+	default:
+		didKeyShortcut = false;
+	}
+	if (!didKeyShortcut)
+	{
+		switch (key)
 		{
+		case SDLK_TAB: //Tab
+			c->ChangeBrush();
+			break;
+		case SDLK_INSERT:
+			if (ctrl)
+				c->SetReplaceModeFlags(c->GetReplaceModeFlags()^SPECIFIC_DELETE);
+			else
+				c->SetReplaceModeFlags(c->GetReplaceModeFlags()^REPLACE_MODE);
+			break;
+		case SDLK_DELETE:
 			c->SetReplaceModeFlags(c->GetReplaceModeFlags()^SPECIFIC_DELETE);
 			break;
 		}
-		//fancy case switch without break
-	case SDLK_INSERT:
-		c->SetReplaceModeFlags(c->GetReplaceModeFlags()^REPLACE_MODE);
-		break;
-	case SDLK_DELETE:
-		c->SetReplaceModeFlags(c->GetReplaceModeFlags()^SPECIFIC_DELETE);
-		break;
 	}
 
 	if (shift && showDebug && key == '1')
@@ -1680,24 +1675,11 @@ void GameView::OnKeyRelease(int key, int scan, bool repeat, bool shift, bool ctr
 {
 	if (repeat)
 		return;
-	switch(key)
+	if (scan == SDL_SCANCODE_Z)
 	{
-	case SDLK_LALT:
-	case SDLK_RALT:
-		disableAltBehaviour();
-		break;
-	case SDLK_LCTRL:
-	case SDLK_RCTRL:
-		disableCtrlBehaviour();
-		break;
-	case SDLK_LSHIFT:
-	case SDLK_RSHIFT:
-		disableShiftBehaviour();
-		break;
-	case 'z':
-		if(!zoomCursorFixed && !alt)
+		if (!zoomCursorFixed && !alt)
 			c->SetZoomEnabled(false);
-		break;
+		return;
 	}
 }
 
@@ -1850,13 +1832,25 @@ void GameView::DoTextInput(String text)
 
 void GameView::DoKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl, bool alt)
 {
+	if (shift && !shiftBehaviour)
+		enableShiftBehaviour();
+	if (ctrl && !ctrlBehaviour)
+		enableCtrlBehaviour();
+	if (alt && !altBehaviour)
+		enableAltBehaviour();
 	if (c->KeyPress(key, scan, repeat, shift, ctrl, alt))
 		Window::DoKeyPress(key, scan, repeat, shift, ctrl, alt);
 }
 
 void GameView::DoKeyRelease(int key, int scan, bool repeat, bool shift, bool ctrl, bool alt)
 {
-	if(c->KeyRelease(key, scan, repeat, shift, ctrl, alt))
+	if (!shift && shiftBehaviour)
+		disableShiftBehaviour();
+	if (!ctrl && ctrlBehaviour)
+		disableCtrlBehaviour();
+	if (!alt && altBehaviour)
+		disableAltBehaviour();
+	if (c->KeyRelease(key, scan, repeat, shift, ctrl, alt))
 		Window::DoKeyRelease(key, scan, repeat, shift, ctrl, alt);
 }
 
@@ -1879,7 +1873,7 @@ void GameView::NotifyNotificationsChanged(GameModel * sender)
 		Notification * notification;
 	public:
 		NotificationButtonAction(Notification * notification) : notification(notification) { }
-		void ActionCallback(ui::Button * sender)
+		void ActionCallback(ui::Button * sender) override
 		{
 			notification->Action();
 			//v->c->RemoveNotification(notification);
@@ -1891,11 +1885,11 @@ void GameView::NotifyNotificationsChanged(GameModel * sender)
 		Notification * notification;
 	public:
 		CloseNotificationButtonAction(GameView * v, Notification * notification) : v(v), notification(notification) { }
-		void ActionCallback(ui::Button * sender)
+		void ActionCallback(ui::Button * sender) override
 		{
 			v->c->RemoveNotification(notification);
 		}
-		void AltActionCallback(ui::Button * sender)
+		void AltActionCallback(ui::Button * sender) override
 		{
 			v->c->RemoveNotification(notification);
 		}
@@ -2296,14 +2290,14 @@ void GameView::OnDraw()
 			if (showDebug)
 			{
 				if (type == PT_LAVA && c->IsValidElement(ctype))
-					sampleInfo << "Molten " << c->ElementResolve(ctype, -1).FromAscii();
+					sampleInfo << "Molten " << c->ElementResolve(ctype, -1);
 				else if ((type == PT_PIPE || type == PT_PPIP) && c->IsValidElement(ctype))
-					sampleInfo << c->ElementResolve(type, -1).FromAscii() << " with " << c->ElementResolve(ctype, (int)sample.particle.pavg[1]).FromAscii();
+					sampleInfo << c->ElementResolve(type, -1) << " with " << c->ElementResolve(ctype, (int)sample.particle.pavg[1]);
 				else if (type == PT_LIFE)
-					sampleInfo << c->ElementResolve(type, ctype).FromAscii();
+					sampleInfo << c->ElementResolve(type, ctype);
 				else if (type == PT_FILT)
 				{
-					sampleInfo << c->ElementResolve(type, ctype).FromAscii();
+					sampleInfo << c->ElementResolve(type, ctype);
 					String filtModes[] = {"set colour", "AND", "OR", "subtract colour", "red shift", "blue shift", "no effect", "XOR", "NOT", "old QRTZ scattering", "variable red shift", "variable blue shift"};
 					if (sample.particle.tmp>=0 && sample.particle.tmp<=11)
 						sampleInfo << " (" << filtModes[sample.particle.tmp] << ")";
@@ -2312,14 +2306,14 @@ void GameView::OnDraw()
 				}
 				else
 				{
-					sampleInfo << c->ElementResolve(type, ctype).FromAscii();
+					sampleInfo << c->ElementResolve(type, ctype);
 					if (wavelengthGfx)
 						sampleInfo << " (" << ctype << ")";
 					// Some elements store extra LIFE info in upper bits of ctype, instead of tmp/tmp2
 					else if (type == PT_CRAY || type == PT_DRAY || type == PT_CONV)
-						sampleInfo << " (" << c->ElementResolve(TYP(ctype), ID(ctype)).FromAscii() << ")";
+						sampleInfo << " (" << c->ElementResolve(TYP(ctype), ID(ctype)) << ")";
 					else if (c->IsValidElement(ctype))
-						sampleInfo << " (" << c->ElementResolve(ctype, -1).FromAscii() << ")";
+						sampleInfo << " (" << c->ElementResolve(ctype, -1) << ")";
 					else
 						sampleInfo << " ()";
 				}
@@ -2331,7 +2325,7 @@ void GameView::OnDraw()
 					{
 						String elemName = c->ElementResolve(
 							TYP(sample.particle.tmp),
-							ID(sample.particle.tmp)).FromAscii();
+							ID(sample.particle.tmp));
 						if (elemName == "")
 							sampleInfo << ", Tmp: " << sample.particle.tmp;
 						else
@@ -2350,13 +2344,13 @@ void GameView::OnDraw()
 			else
 			{
 				if (type == PT_LAVA && c->IsValidElement(ctype))
-					sampleInfo << "Molten " << c->ElementResolve(ctype, -1).FromAscii();
+					sampleInfo << "Molten " << c->ElementResolve(ctype, -1);
 				else if ((type == PT_PIPE || type == PT_PPIP) && c->IsValidElement(ctype))
-					sampleInfo << c->ElementResolve(type, -1).FromAscii() << " with " << c->ElementResolve(ctype, (int)sample.particle.pavg[1]).FromAscii();
+					sampleInfo << c->ElementResolve(type, -1) << " with " << c->ElementResolve(ctype, (int)sample.particle.pavg[1]);
 				else if (type == PT_LIFE)
-					sampleInfo << c->ElementResolve(type, ctype).FromAscii();
+					sampleInfo << c->ElementResolve(type, ctype);
 				else
-					sampleInfo << c->ElementResolve(type, ctype).FromAscii();
+					sampleInfo << c->ElementResolve(type, ctype);
 				sampleInfo << ", Temp: " << sample.particle.temp - 273.15f << " C";
 				sampleInfo << ", Pressure: " << sample.AirPressure;
 			}
