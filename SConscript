@@ -464,8 +464,10 @@ if GetOption('debugging'):
 		env.Append(CCFLAGS=['/Od'])
 		if GetOption('static'):
 			env.Append(CCFLAGS=['/MTd'])
+			env.Append(CPPDEFINES=['DEBUG'])
 		else:
 			env.Append(CCFLAGS=['/MDd'])
+			env.Append(CPPDEFINES=['DEBUG'])
 	else:
 		env.Append(CCFLAGS=['-Wall', '-g'])
 		env.Append(CPPDEFINES=['DEBUG'])
