@@ -1661,7 +1661,7 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 	{
 		c->LoadRenderPreset(10);
 	}
-	else if(shift && key == '2')
+	else if(shift && showDebug && key == '2')
 	{
 		c->LoadRenderPreset(11);
 	}
