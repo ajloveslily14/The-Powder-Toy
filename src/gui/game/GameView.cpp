@@ -2369,7 +2369,7 @@ void GameView::OnDraw()
 		{
 			sampleInfo << c->WallName(sample.WallType);
 			if (sample.WallType == WL_FAN){
-				sampleInfo << "(VelX: " << *sample.FanvX << ", VelY: " << *sample.FanvY << ")";
+				sampleInfo << "(VelX: " << sample.FanvX << ", VelY: " << sample.FanvY << ")";
 			}
 			sampleInfo << ", Pressure: " << sample.AirPressure;
 		}

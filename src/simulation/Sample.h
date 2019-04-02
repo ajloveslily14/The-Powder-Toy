@@ -17,8 +17,8 @@ public:
 	float AirVelocityY;
 
 	int WallType;
-	float * FanvX;
-	float * FanvY;
+	float FanvX;
+	float FanvY;
 	float Gravity;
 	float GravityVelocityX;
 	float GravityVelocityY;
