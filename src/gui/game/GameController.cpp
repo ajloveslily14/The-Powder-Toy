@@ -1206,6 +1206,22 @@ int GameController::GetReplaceModeFlags()
 
 void GameController::SetReplaceModeFlags(int flags)
 {
+	int old_flags = gameModel->GetSimulation()->replaceModeFlags;
+	if (!(old_flags & REPLACE_MODE) && (flags & REPLACE_MODE))
+	{
+		// if replace mode has just been enabled, disable specific delete
+		flags &= ~SPECIFIC_DELETE;
+	}
+	if (!(old_flags & SPECIFIC_DELETE) && (flags & SPECIFIC_DELETE))
+	{
+		// if specific delete has just been enabled, disable replace mode
+		flags &= ~REPLACE_MODE;
+	}
+	if ((flags & SPECIFIC_DELETE) && (flags & REPLACE_MODE))
+	{
+		// if both have just been enabled, arbitrarily disable one of them
+		flags &= ~SPECIFIC_DELETE;
+	}
 	gameModel->GetSimulation()->replaceModeFlags = flags;
 }
 
@@ -1552,6 +1568,24 @@ void GameController::ClearSim()
 	gameModel->ClearSimulation();
 }
 
+String GameController::ElementResolve(int type, int ctype)
+{
+	if (gameModel && gameModel->GetSimulation())
+	{
+		return gameModel->GetSimulation()->ElementResolve(type, ctype);
+	}
+	return "";
+}
+
+String GameController::BasicParticleInfo(Particle const &sample_part)
+{
+	if (gameModel && gameModel->GetSimulation())
+	{
+		return gameModel->GetSimulation()->BasicParticleInfo(sample_part);
+	}
+	return "";
+}
+
 void GameController::ReloadSim()
 {
 	if(gameModel->GetSave() && gameModel->GetSave()->GetGameSave())
@@ -1564,18 +1598,6 @@ void GameController::ReloadSim()
 		HistorySnapshot();
 		gameModel->SetSaveFile(gameModel->GetSaveFile());
 	}
-}
-
-String GameController::ElementResolve(int type, int ctype)
-{
-	if(gameModel && gameModel->GetSimulation())
-	{
-		if (type == PT_LIFE && ctype >= 0 && ctype < NGOL)
-			return gameModel->GetSimulation()->gmenu[ctype].name;
-		else if (type >= 0 && type < PT_NUM)
-			return gameModel->GetSimulation()->elements[type].Name;
-	}
-	return "";
 }
 
 bool GameController::IsValidElement(int type)

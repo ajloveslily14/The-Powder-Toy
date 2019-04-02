@@ -6,7 +6,15 @@
 #include "common/tpt-thread.h"
 #include <curl/curl.h>
 #include "common/String.h"
-#undef GetUserName // pthreads (included by curl) defines this, breaks stuff
+#undef GetUserName // pthreads defines this, breaks stuff
+
+#if defined(CURL_AT_LEAST_VERSION) && CURL_AT_LEAST_VERSION(7, 55, 0)
+# define REQUEST_USE_CURL_OFFSET_T
+#endif
+
+#if defined(CURL_AT_LEAST_VERSION) && CURL_AT_LEAST_VERSION(7, 56, 0)
+# define REQUEST_USE_CURL_MIMEPOST
+#endif
 
 namespace http
 {
@@ -29,7 +37,13 @@ namespace http
 		int status;
 
 		struct curl_slist *headers;
+
+#ifdef REQUEST_USE_CURL_MIMEPOST
 		curl_mime *post_fields;
+#else
+		curl_httppost *post_fields_first, *post_fields_last;
+		std::map<ByteString, ByteString> post_fields_map;
+#endif
 
 		pthread_cond_t done_cv;
 
@@ -58,7 +72,7 @@ namespace http
 		static ByteString SimpleAuth(ByteString uri, int *status, ByteString ID, ByteString session, std::map<ByteString, ByteString> post_data = std::map<ByteString, ByteString>{});
 	};
 
-	const char *StatusText(int code);
+	String StatusText(int code);
 
 	extern const long timeout;
 	extern ByteString proxy;

@@ -233,6 +233,24 @@ int Simulation::Load(int fullX, int fullY, GameSave * save, bool includePressure
 		case PT_SOAP:
 			soapList.insert(std::pair<unsigned int, unsigned int>(n, i));
 			break;
+
+			// List of elements that load pavg with a multiplicative bias of 2**6
+			// (or not at all if pressure is not loaded).
+			// If you change this list, change it in GameSave::serialiseOPS too!
+		case PT_QRTZ:
+		case PT_GLAS:
+		case PT_TUNG:
+			if (!includePressure)
+			{
+				parts[i].pavg[0] = 0;
+				parts[i].pavg[1] = 0;
+			}
+			else
+			{
+				parts[i].pavg[0] /= 64;
+				parts[i].pavg[1] /= 64;
+			}
+			break;
 		}
 	}
 	parts_lastActiveIndex = NPART-1;
@@ -437,10 +455,13 @@ GameSave * Simulation::Save(int fullX, int fullY, int fullX2, int fullY2, bool i
 				newSave->velocityX[saveBlockY][saveBlockX] = vx[saveBlockY+blockY][saveBlockX+blockX];
 				newSave->velocityY[saveBlockY][saveBlockX] = vy[saveBlockY+blockY][saveBlockX+blockX];
 				newSave->ambientHeat[saveBlockY][saveBlockX] = hv[saveBlockY+blockY][saveBlockX+blockX];
-				newSave->hasPressure = true;
-				newSave->hasAmbientHeat = true;
 			}
 		}
+	}
+	if (includePressure)
+	{
+		newSave->hasPressure = true;
+		newSave->hasAmbientHeat = true;
 	}
 
 	newSave->stkm.rocketBoots1 = player.rocketBoots;
@@ -1601,38 +1622,6 @@ int Simulation::CreateParts(int x, int y, int rx, int ry, int c, int flags)
 	return !created;
 }
 
-int Simulation::CreatePartFlags(int x, int y, int c, int flags)
-{
-	//delete
-	if (c == 0 && !(flags&REPLACE_MODE))
-		delete_part(x, y);
-	//specific delete
-	else if ((flags&SPECIFIC_DELETE) && !(flags&REPLACE_MODE))
-	{
-		if (!replaceModeSelected || TYP(pmap[y][x]) == replaceModeSelected || TYP(photons[y][x]) == replaceModeSelected)
-			delete_part(x, y);
-	}
-	//replace mode
-	else if (flags&REPLACE_MODE)
-	{
-		if (x<0 || y<0 || x>=XRES || y>=YRES)
-			return 0;
-		if (replaceModeSelected && TYP(pmap[y][x]) != replaceModeSelected && TYP(photons[y][x]) != replaceModeSelected)
-			return 0;
-		if ((pmap[y][x]))
-		{
-			delete_part(x, y);
-			if (c!=0)
-				create_part(-2, x, y, TYP(c), ID(c));
-		}
-	}
-	//normal draw
-	else
-		if (create_part(-2, x, y, TYP(c), ID(c)) == -1)
-			return 1;
-	return 0;
-}
-
 void Simulation::CreateLine(int x1, int y1, int x2, int y2, int c, Brush * cBrush, int flags)
 {
 	int x, y, dx, dy, sy, rx = cBrush->GetRadius().X, ry = cBrush->GetRadius().Y;
@@ -1684,6 +1673,64 @@ void Simulation::CreateLine(int x1, int y1, int x2, int y2, int c, Brush * cBrus
 			e -= 1.0f;
 		}
 	}
+}
+
+int Simulation::CreatePartFlags(int x, int y, int c, int flags)
+{
+	if (x < 0 || y < 0 || x >= XRES || y >= YRES)
+	{
+		return 0;
+	}
+
+	if (flags & REPLACE_MODE)
+	{
+		// if replace whatever and there's something to replace
+		// or replace X and there's a non-energy particle on top with type X
+		// or replace X and there's an energy particle on top with type X
+		if ((!replaceModeSelected && (photons[y][x] || pmap[y][x])) ||
+			(!photons[y][x] && pmap[y][x] && TYP(pmap[y][x]) == replaceModeSelected) ||
+			(photons[y][x] && TYP(photons[y][x]) == replaceModeSelected))
+		{
+			if (c)
+			{
+				part_change_type(photons[y][x] ? ID(photons[y][x]) : ID(pmap[y][x]), x, y, TYP(c));
+			}
+			else
+			{
+				delete_part(x, y);
+			}
+		}
+		return 0;
+	}
+	else if (!c)
+	{
+		delete_part(x, y);
+		return 0;
+	}
+	else if (flags & SPECIFIC_DELETE)
+	{
+		// if delete whatever and there's something to delete
+		// or delete X and there's a non-energy particle on top with type X
+		// or delete X and there's an energy particle on top with type X
+		if ((!replaceModeSelected && (photons[y][x] || pmap[y][x])) ||
+			(!photons[y][x] && pmap[y][x] && TYP(pmap[y][x]) == replaceModeSelected) ||
+			(photons[y][x] && TYP(photons[y][x]) == replaceModeSelected))
+		{
+			delete_part(x, y);
+		}
+		return 0;
+	}
+	else
+	{
+		if (create_part(-2, x, y, TYP(c), ID(c)) == -1)
+		{
+			return 1;
+		}
+		return 0;
+	}
+
+	// I'm sure at least one compiler exists that would complain if this wasn't here
+	return 0;
 }
 
 //Now simply creates a 0 pixel radius line without all the complicated flags / other checks
@@ -5485,4 +5532,45 @@ Simulation::Simulation():
 	clear_sim();
 
 	grav->gravity_mask();
+}
+
+String Simulation::ElementResolve(int type, int ctype)
+{
+	if (type == PT_LIFE && ctype >= 0 && ctype < NGOL)
+	{
+		return gmenu[ctype].name;
+	}
+	else if (type >= 0 && type < PT_NUM)
+	{
+		return elements[type].Name;
+	}
+	return "Empty";
+}
+
+String Simulation::BasicParticleInfo(Particle const &sample_part)
+{
+	StringBuilder sampleInfo;
+	int type = sample_part.type;
+	int ctype = sample_part.ctype;
+	int pavg1int = (int)sample_part.pavg[1];
+	if (type == PT_LAVA && ctype && IsValidElement(ctype))
+	{
+		sampleInfo << "Molten " << ElementResolve(ctype, -1);
+	}
+	else if ((type == PT_PIPE || type == PT_PPIP) && ctype && IsValidElement(ctype))
+	{
+		if (ctype == PT_LAVA && pavg1int && IsValidElement(pavg1int))
+		{
+			sampleInfo << ElementResolve(type, -1) << " with molten " << ElementResolve(pavg1int, -1);
+		}
+		else
+		{
+			sampleInfo << ElementResolve(type, -1) << " with " << ElementResolve(ctype, pavg1int);
+		}
+	}
+	else
+	{
+		sampleInfo << ElementResolve(type, ctype);
+	}
+	return sampleInfo.Build();
 }

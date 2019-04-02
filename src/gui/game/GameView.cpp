@@ -559,8 +559,12 @@ public:
 		else
 		{
 			if (v->CtrlBehaviour() && v->AltBehaviour() && !v->ShiftBehaviour())
-				if (tool->GetIdentifier().BeginsWith("DEFAULT_PT_"))
+			{
+				if (tool->GetIdentifier().Contains("_PT_"))
+				{
 					sender->SetSelectionState(3);
+				}
+			}
 
 			if (sender->GetSelectionState() >= 0 && sender->GetSelectionState() <= 3)
 				v->c->SetActiveTool(sender->GetSelectionState(), tool);
@@ -2290,11 +2294,24 @@ void GameView::OnDraw()
 			if (showDebug)
 			{
 				if (type == PT_LAVA && c->IsValidElement(ctype))
+				{
 					sampleInfo << "Molten " << c->ElementResolve(ctype, -1);
+				}
 				else if ((type == PT_PIPE || type == PT_PPIP) && c->IsValidElement(ctype))
-					sampleInfo << c->ElementResolve(type, -1) << " with " << c->ElementResolve(ctype, (int)sample.particle.pavg[1]);
+				{
+					if (ctype == PT_LAVA && c->IsValidElement((int)sample.particle.pavg[1]))
+					{
+						sampleInfo << c->ElementResolve(type, -1) << " with molten " << c->ElementResolve((int)sample.particle.pavg[1], -1);
+					}
+					else
+					{
+						sampleInfo << c->ElementResolve(type, -1) << " with " << c->ElementResolve(ctype, (int)sample.particle.pavg[1]);
+					}
+				}
 				else if (type == PT_LIFE)
+				{
 					sampleInfo << c->ElementResolve(type, ctype);
+				}
 				else if (type == PT_FILT)
 				{
 					sampleInfo << c->ElementResolve(type, ctype);
@@ -2343,14 +2360,7 @@ void GameView::OnDraw()
 			}
 			else
 			{
-				if (type == PT_LAVA && c->IsValidElement(ctype))
-					sampleInfo << "Molten " << c->ElementResolve(ctype, -1);
-				else if ((type == PT_PIPE || type == PT_PPIP) && c->IsValidElement(ctype))
-					sampleInfo << c->ElementResolve(type, -1) << " with " << c->ElementResolve(ctype, (int)sample.particle.pavg[1]);
-				else if (type == PT_LIFE)
-					sampleInfo << c->ElementResolve(type, ctype);
-				else
-					sampleInfo << c->ElementResolve(type, ctype);
+				sampleInfo << c->BasicParticleInfo(sample.particle);
 				sampleInfo << ", Temp: " << sample.particle.temp - 273.15f << " C";
 				sampleInfo << ", Pressure: " << sample.AirPressure;
 			}
