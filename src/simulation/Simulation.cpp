@@ -694,6 +694,10 @@ SimulationSample Simulation::GetSample(int x, int y)
 		if (bmap[y/CELL][x/CELL])
 		{
 			sample.WallType = bmap[y/CELL][x/CELL];
+			if (sample.WallType == WL_FAN) {
+				sample.FanvX = fvx[x / CELL];
+				sample.FanvY = fvy[y / CELL];
+			}
 		}
 		sample.AirPressure = pv[y/CELL][x/CELL];
 		sample.AirTemperature = hv[y/CELL][x/CELL];
