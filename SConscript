@@ -409,7 +409,7 @@ if not msvc:
 if platform == "Windows":
 	env.Append(CPPDEFINES=["WIN", "_WIN32_WINNT=0x0501", "_USING_V110_SDK71_"])
 	if msvc:
-		env.Append(CCFLAGS=['/Gm', '/Zi', '/EHsc', '/FS', '/GS']) #enable minimal rebuild, ?, enable exceptions, allow -j to work in debug builds, enable security check
+		env.Append(CCFLAGS=['/Zi', '/EHsc', '/FS', '/GS']) #enable minimal rebuild, ?, enable exceptions, allow -j to work in debug builds, enable security check
 		if GetOption('renderer'):
 			env.Append(LINKFLAGS=['/SUBSYSTEM:CONSOLE'])
 		else:
