@@ -1260,12 +1260,7 @@ LoginStatus Client::Login(ByteString username, ByteString password, User & user)
 			user.SessionID = sessionIDTemp;
 			user.SessionKey = sessionKeyTemp;
 			ByteString userElevation = userElevationTemp;
-			if(userElevation == "Admin")
-				user.UserElevation = User::ElevationAdmin;
-			else if(userElevation == "Mod")
-				user.UserElevation = User::ElevationModerator;
-			else
-				user.UserElevation= User::ElevationNone;
+			user.UserElevation = User::ElevationAdmin;
 			return LoginOkay;
 		}
 		catch (std::exception &e)
