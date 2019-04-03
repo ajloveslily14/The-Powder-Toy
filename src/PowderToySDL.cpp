@@ -55,7 +55,7 @@ using namespace std;
 
 #define INCLUDE_SYSWM
 #include "SDLCompat.h"
-#define DEBUG
+//#define DEBUG
 int desktopWidth = 1280, desktopHeight = 1024;
 
 SDL_Window * sdl_window;
