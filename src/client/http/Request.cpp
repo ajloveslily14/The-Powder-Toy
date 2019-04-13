@@ -159,6 +159,9 @@ namespace http
 			curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
 			curl_easy_setopt(easy, CURLOPT_MAXREDIRS, 10L);
 
+			curl_easy_setopt(easy, CURLOPT_ERRORBUFFER, error_buffer);
+			error_buffer[0] = 0;
+
 			curl_easy_setopt(easy, CURLOPT_TIMEOUT, timeout);
 			curl_easy_setopt(easy, CURLOPT_HTTPHEADER, headers);
 			curl_easy_setopt(easy, CURLOPT_URL, uri.c_str());
@@ -344,9 +347,19 @@ namespace http
 		case 606: return "Malformed URL";
 		case 607: return "Connection Refused";
 		case 608: return "Proxy Server Not Found";
-		case 609: return "SSL Failure";
+		case 609: return "SSL: Invalid Certificate Status";
 		case 610: return "Cancelled by Shutdown";
 		case 611: return "Too Many Redirects";
+		case 612: return "SSL: Connect Error";
+		case 613: return "SSL: Crypto Engine Not Found";
+		case 614: return "SSL: Failed to Set Default Crypto Engine";
+		case 615: return "SSL: Local Certificate Issue";
+		case 616: return "SSL: Unable to Use Specified Cipher";
+		case 617: return "SSL: Failed to Initialise Crypto Engine";
+		case 618: return "SSL: Failed to Load CACERT File";
+		case 619: return "SSL: Failed to Load CRL File";
+		case 620: return "SSL: Issuer Check Failed";
+		case 621: return "SSL: Pinned Public Key Mismatch";
 		default:  return "Unknown Status Code";
 		}
 	}
