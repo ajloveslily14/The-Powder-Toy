@@ -630,7 +630,9 @@ int main(int argc, char * argv[])
 	AllocConsole() ;
 	AttachConsole(GetCurrentProcessId());
 	freopen("CON", "w", stdout);
-	std::cout << "Console Loaded!" << std::endl;
+	std::cout << "stdout loaded" << std::endl;
+	freopen("CON", "w", stderr);
+	std::cerr << "stderr loaded" << std::endl;
 #endif
 
 #if defined(_DEBUG) && defined(_MSC_VER)
