@@ -2357,7 +2357,7 @@ void GameView::OnDraw()
 				if (type == PT_CRAY || type == PT_DRAY || type == PT_EXOT || type == PT_LIGH || type == PT_SOAP || type == PT_TRON || type == PT_VIBR || type == PT_VIRS || type == PT_WARP || type == PT_LCRY || type == PT_CBNW || type == PT_TSNS || type == PT_DTEC || type == PT_LSNS || type == PT_PSTN || type == PT_LDTC)
 					sampleInfo << ", Tmp2: " << sample.particle.tmp2;
 
-				sampleInfo << ", vx: " << sample.particle.vx << ", vy: " << sample.particle.vy;
+				
 				sampleInfo << ", Pressure: " << sample.AirPressure;
 
 			}
@@ -2432,7 +2432,11 @@ void GameView::OnDraw()
 			sampleInfo << Format::Precision(2);
 
 			if (type)
+			{
 				sampleInfo << "#" << sample.ParticleID << ", ";
+				sampleInfo << "vx: " << sample.particle.vx << ", vy: " << sample.particle.vy << ", ";
+			}
+
 
 			sampleInfo << "X:" << sample.PositionX << " Y:" << sample.PositionY;
 

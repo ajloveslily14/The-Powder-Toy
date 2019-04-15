@@ -632,7 +632,7 @@ int main(int argc, char * argv[])
 {
 
 #if defined(DEBUG)
-	AllocConsole() ;
+	AllocConsole();
 	AttachConsole(GetCurrentProcessId());
 	freopen("CON", "w", stdout);
 	std::cout << "stdout loaded" << std::endl;
