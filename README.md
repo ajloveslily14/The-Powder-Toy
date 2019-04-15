@@ -9,6 +9,7 @@ Notable differences in this fork
 * The graph at the top of the screen when setting `tpt.setdebug(0x1)` shows the color of the element it represents.
 * With the hud on there is text that shows your brush size.
 * Fan velocity is shown in tooltip.
+* Particle x and y velocity is shown when debug is enabled.
 
 The Powder Toy - February 2019
 ==========================
