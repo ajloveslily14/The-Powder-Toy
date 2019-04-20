@@ -11,6 +11,7 @@ Notable differences in this fork
 * Fan velocity is shown in tooltip.
 * Particle x and y velocity is shown when debug is enabled.
 * Max and min pressure tools.
+* Max and min temp tools.
 
 The Powder Toy - February 2019
 ==========================
