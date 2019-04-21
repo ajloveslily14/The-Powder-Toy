@@ -1,10 +1,10 @@
-#include "common/String.h"
 #include "Tool.h"
+
 #include "gui/game/Brush.h"
 
 #include "simulation/Simulation.h"
-
-using namespace std;
+#include "simulation/SimulationData.h"
+#include "ElementClasses.h"
 
 Tool::Tool(int id, String name, String description, int r, int g, int b, ByteString identifier, VideoBuffer * (*textureGen)(int, int, int)):
 	textureGen(textureGen),

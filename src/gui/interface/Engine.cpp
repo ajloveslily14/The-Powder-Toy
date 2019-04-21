@@ -1,17 +1,19 @@
-#include <iostream>
-#include <stack>
-#include <cstdio>
+#include "gui/interface/Engine.h"
+
+#include "Window.h"
+
 #include <cmath>
+#include <cstring>
+
+#include "gui/dialogues/ConfirmPrompt.h"
+
+#include "graphics/Graphics.h"
 
 #include "Config.h"
 #include "Platform.h"
-#include "gui/interface/Window.h"
-#include "gui/interface/Engine.h"
-#include "gui/dialogues/ConfirmPrompt.h"
-#include "graphics/Graphics.h"
+#include "PowderToy.h"
 
 using namespace ui;
-using namespace std;
 
 Engine::Engine():
 	FpsLimit(60.0f),
@@ -21,9 +23,6 @@ Engine::Engine():
 	altFullscreen(false),
 	resizable(false),
 	lastBuffer(NULL),
-	prevBuffers(stack<pixel*>()),
-	windows(stack<Window*>()),
-	mousePositions(stack<Point>()),
 	state_(NULL),
 	windowTargetPosition(0, 0),
 	break_(false),
