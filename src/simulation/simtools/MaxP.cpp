@@ -1,4 +1,4 @@
-#include "ToolClasses.h"
+#include "simulation/ToolCommon.h"
 #include "simulation/Air.h"
 //#TPT-Directive ToolClass Tool_MaxP TOOL_MAXP 99
 Tool_MaxP::Tool_MaxP(){

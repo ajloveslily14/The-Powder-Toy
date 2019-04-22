@@ -1,4 +1,4 @@
-#include "ToolClasses.h"
+#include "simulation/ToolCommon.h"
 //#TPT-Directive ToolClass Tool_MinT TOOL_MINT 96
 Tool_MinT::Tool_MinT()
 {
