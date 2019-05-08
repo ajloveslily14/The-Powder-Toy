@@ -245,6 +245,15 @@ namespace http
 	void RequestManager::StartRequest(Request *request)
 	{
 		{
+#ifdef DEBUG
+			printf("Requesting: %s%s", request->uri.c_str(), request->headers ? " with headers:\n" : "\n");
+			if (request->headers) {
+				curl_slist *item = request->headers;
+				do {
+					printf("\t%s\n", item->data);
+				} while (item = item->next);
+			}
+#endif
 			std::lock_guard<std::mutex> g(rt_mutex);
 			requests_to_start = true;
 		}

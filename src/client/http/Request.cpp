@@ -1,7 +1,9 @@
 #include "Request.h"
 
 #include "RequestManager.h"
-
+#ifdef DEBUG
+#include <iostream>
+#endif
 namespace http
 {
 	Request::Request(ByteString uri_):
@@ -264,6 +266,15 @@ namespace http
 		request->AddPostData(post_data);
 		request->AuthHeaders(ID, session);
 		request->Start();
+#ifdef DEBUG
+		if (post_data.size() != 0) {
+			std::cout << "and data:" << std::endl;
+			std::map<ByteString, ByteString>::iterator itr; // tbh I'm not sure if this is good or not....
+			for (itr = post_data.begin(); itr != post_data.end(); itr++) {
+				std::cout << "\t" << itr->first << ":    " << itr->second << std::endl;
+			}
+		}
+#endif
 		return request->Finish(status);
 	}
 
