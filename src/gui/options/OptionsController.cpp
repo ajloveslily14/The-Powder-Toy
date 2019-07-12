@@ -92,6 +92,16 @@ OptionsView * OptionsController::GetView()
 	return view;
 }
 
+void OptionsController::SetMouseClickrequired(bool mouseClickRequired)
+{
+	model->SetMouseClickRequired(mouseClickRequired);
+}
+
+void OptionsController::SetIncludePressure(bool includePressure)
+{
+	model->SetIncludePressure(includePressure);
+}
+
 void OptionsController::Exit()
 {
 	view->CloseActiveWindow();

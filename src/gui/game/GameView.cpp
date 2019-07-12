@@ -492,7 +492,7 @@ public:
 	{
 		v = _v;
 		menuID = menuID_;
-		if (menuID == SC_DECO)
+		 if (menuID == SC_DECO)
 			needsClick = true;
 		else
 			needsClick = false;
@@ -502,12 +502,12 @@ public:
 		// don't immediately change the active menu, the actual set is done inside GameView::OnMouseMove
 		// if we change it here it causes components to be removed, which causes the window to stop sending events
 		// and then the previous menusection button never gets sent the OnMouseLeave event and is never unhighlighted
-		if(!needsClick && !v->GetMouseDown())
+		if(!(needsClick || v->c->GetMouseClickRequired()) && !v->GetMouseDown())
 			v->SetActiveMenuDelayed(menuID);
 	}
 	void ActionCallback(ui::Button * sender) override
 	{
-		if (needsClick)
+		if (needsClick || v->c->GetMouseClickRequired())
 			v->c->SetActiveMenu(menuID);
 		else
 			MouseEnterCallback(sender);
@@ -1274,7 +1274,7 @@ void GameView::OnMouseUp(int x, int y, unsigned button)
 						if (thumbY+(placeSaveThumb->Height) >= YRES)
 							thumbY = YRES-placeSaveThumb->Height;
 
-						c->PlaceSave(ui::Point(thumbX, thumbY), !shiftBehaviour);
+						c->PlaceSave(ui::Point(thumbX, thumbY));
 					}
 				}
 				else
@@ -1284,11 +1284,11 @@ void GameView::OnMouseUp(int x, int y, unsigned button)
 					int x1 = (selectPoint2.X<selectPoint1.X) ? selectPoint2.X : selectPoint1.X;
 					int y1 = (selectPoint2.Y<selectPoint1.Y) ? selectPoint2.Y : selectPoint1.Y;
 					if (selectMode ==SelectCopy)
-						c->CopyRegion(ui::Point(x1, y1), ui::Point(x2, y2), !shiftBehaviour);
+						c->CopyRegion(ui::Point(x1, y1), ui::Point(x2, y2));
 					else if (selectMode == SelectCut)
-						c->CutRegion(ui::Point(x1, y1), ui::Point(x2, y2), !shiftBehaviour);
+						c->CutRegion(ui::Point(x1, y1), ui::Point(x2, y2));
 					else if (selectMode == SelectStamp)
-						c->StampRegion(ui::Point(x1, y1), ui::Point(x2, y2), !shiftBehaviour);
+						c->StampRegion(ui::Point(x1, y1), ui::Point(x2, y2));
 				}
 			}
 			selectMode = SelectNone;

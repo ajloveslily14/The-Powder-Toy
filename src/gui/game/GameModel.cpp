@@ -153,6 +153,9 @@ GameModel::GameModel():
 	// cap due to memory usage (this is about 3.4GB of RAM)
 	if (undoHistoryLimit > 200)
 		undoHistoryLimit = 200;
+
+	mouseClickRequired = Client::Ref().GetPrefBool("MouseClickRequired", false);
+	includePressure = Client::Ref().GetPrefBool("Simulation.IncludePressure", true);
 }
 
 GameModel::~GameModel()
@@ -181,6 +184,9 @@ GameModel::~GameModel()
 	Client::Ref().SetPref("Decoration.Alpha", (int)colour.Alpha);
 
 	Client::Ref().SetPref("Simulation.UndoHistoryLimit", undoHistoryLimit);
+
+	Client::Ref().SetPref("MouseClickRequired", mouseClickRequired);
+	Client::Ref().SetPref("Simulation.IncludePressure", includePressure);
 
 	Favorite::Ref().SaveFavoritesToPrefs();
 
@@ -353,21 +359,20 @@ void GameModel::BuildMenus()
 	decoToolset[2] = GetToolFromIdentifier("DEFAULT_UI_SAMPLE");
 	decoToolset[3] = GetToolFromIdentifier("DEFAULT_PT_NONE");
 
+	regularToolset[0] = GetToolFromIdentifier(activeToolIdentifiers[0]);
+	regularToolset[1] = GetToolFromIdentifier(activeToolIdentifiers[1]);
+	regularToolset[2] = GetToolFromIdentifier(activeToolIdentifiers[2]);
+	regularToolset[3] = GetToolFromIdentifier(activeToolIdentifiers[3]);
+
 	//Set default tools
-	regularToolset[0] = GetToolFromIdentifier("DEFAULT_PT_DUST");
-	regularToolset[1] = GetToolFromIdentifier("DEFAULT_PT_NONE");
-	regularToolset[2] = GetToolFromIdentifier("DEFAULT_UI_SAMPLE");
-	regularToolset[3] = GetToolFromIdentifier("DEFAULT_PT_NONE");
-
-
-	if(activeToolIdentifiers[0].length())
-		regularToolset[0] = GetToolFromIdentifier(activeToolIdentifiers[0]);
-	if(activeToolIdentifiers[1].length())
-		regularToolset[1] = GetToolFromIdentifier(activeToolIdentifiers[1]);
-	if(activeToolIdentifiers[2].length())
-		regularToolset[2] = GetToolFromIdentifier(activeToolIdentifiers[2]);
-	if(activeToolIdentifiers[3].length())
-		regularToolset[3] = GetToolFromIdentifier(activeToolIdentifiers[3]);
+	if (!regularToolset[0])
+		regularToolset[0] = GetToolFromIdentifier("DEFAULT_PT_DUST");
+	if (!regularToolset[1])
+		regularToolset[1] = GetToolFromIdentifier("DEFAULT_PT_NONE");
+	if (!regularToolset[2])
+		regularToolset[2] = GetToolFromIdentifier("DEFAULT_UI_SAMPLE");
+	if (!regularToolset[3])
+		regularToolset[3] = GetToolFromIdentifier("DEFAULT_PT_NONE");
 
 	lastTool = activeTools[0];
 
@@ -412,24 +417,26 @@ void GameModel::BuildFavoritesMenu()
 	notifyLastToolChanged();
 }
 
-Tool * GameModel::GetToolFromIdentifier(ByteString identifier)
+Tool *GameModel::GetToolFromIdentifier(ByteString const &identifier)
 {
-	for (std::vector<Menu*>::iterator iter = menuList.begin(), end = menuList.end(); iter != end; ++iter)
+	for (auto *menu : menuList)
 	{
-		std::vector<Tool*> menuTools = (*iter)->GetToolList();
-		for (std::vector<Tool*>::iterator titer = menuTools.begin(), tend = menuTools.end(); titer != tend; ++titer)
+		for (auto *tool : menu->GetToolList())
 		{
-			if (identifier == (*titer)->GetIdentifier())
-				return *titer;
+			if (identifier == tool->GetIdentifier())
+			{
+				return tool;
+			}
 		}
 	}
-	for (std::vector<Tool*>::iterator iter = extraElementTools.begin(), end = extraElementTools.end(); iter != end; ++iter)
+	for (auto *extra : extraElementTools)
 	{
-		if (identifier == (*iter)->GetIdentifier())
-			return *iter;
+		if (identifier == extra->GetIdentifier())
+		{
+			return extra;
+		}
 	}
-
-	return NULL;
+	return nullptr;
 }
 
 void GameModel::SetEdgeMode(int edgeMode)
@@ -657,7 +664,7 @@ void GameModel::SetSave(SaveInfo * newSave)
 			sim->grav->stop_grav_async();
 		sim->clear_sim();
 		ren->ClearAccumulation();
-		if (!sim->Load(saveData))
+		if (!sim->Load(saveData, GetIncludePressure()))
 		{
 			// This save was created before logging existed
 			// Add in the correct info
@@ -722,7 +729,7 @@ void GameModel::SetSaveFile(SaveFile * newSave)
 		}
 		sim->clear_sim();
 		ren->ClearAccumulation();
-		if (!sim->Load(saveData))
+		if (!sim->Load(saveData, GetIncludePressure()))
 		{
 			Client::Ref().OverwriteAuthorInfo(saveData->authors);
 		}
@@ -1292,4 +1299,24 @@ void GameModel::notifyLastToolChanged()
 	{
 		observers[i]->NotifyLastToolChanged(this);
 	}
+}
+
+bool GameModel::GetMouseClickRequired()
+{
+	return mouseClickRequired;
+}
+
+void GameModel::SetMouseClickRequired(bool mouseClickRequired_)
+{
+	mouseClickRequired = mouseClickRequired_;
+}
+
+bool GameModel::GetIncludePressure()
+{
+	return includePressure;
+}
+
+void GameModel::SetIncludePressure(bool includePressure_)
+{
+	includePressure = includePressure_;
 }

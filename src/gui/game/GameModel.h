@@ -67,6 +67,8 @@ private:
 	Snapshot *redoHistory;
 	unsigned int historyPosition;
 	unsigned int undoHistoryLimit;
+	bool mouseClickRequired;
+	bool includePressure;
 
 	size_t activeColourPreset;
 	std::vector<ui::Colour> colourPresets;
@@ -147,7 +149,7 @@ public:
 	float GetToolStrength();
 	Tool * GetLastTool();
 	void SetLastTool(Tool * newTool);
-	Tool * GetToolFromIdentifier(ByteString identifier);
+	Tool *GetToolFromIdentifier(ByteString const &identifier);
 	Tool * GetElementTool(int elementID);
 	std::vector<Tool*> GetToolList();
 	std::vector<Tool*> GetUnlistedTools();
@@ -202,6 +204,10 @@ public:
 	std::deque<String> GetLog();
 	GameSave * GetClipboard();
 	GameSave * GetPlaceSave();
+	bool GetMouseClickRequired();
+	void SetMouseClickRequired(bool mouseClickRequired);
+	bool GetIncludePressure();
+	void SetIncludePressure(bool includePressure);
 
 	std::vector<Notification*> GetNotifications();
 	void AddNotification(Notification * notification);

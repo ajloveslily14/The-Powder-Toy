@@ -180,6 +180,30 @@ void OptionsModel::SetShowAvatars(bool state)
 	notifySettingsChanged();
 }
 
+bool OptionsModel::GetMouseClickRequired()
+{
+	return Client::Ref().GetPrefBool("MouseClickRequired", false);
+}
+
+void OptionsModel::SetMouseClickRequired(bool mouseClickRequired)
+{
+	Client::Ref().SetPref("MouseClickRequired", mouseClickRequired);
+	gModel->SetMouseClickRequired(mouseClickRequired);
+	notifySettingsChanged();
+}
+
+bool OptionsModel::GetIncludePressure()
+{
+	return Client::Ref().GetPrefBool("Simulation.IncludePressure", true);
+}
+
+void OptionsModel::SetIncludePressure(bool includePressure)
+{
+	Client::Ref().SetPref("Simulation.IncludePressure", includePressure);
+	gModel->SetIncludePressure(includePressure);
+	notifySettingsChanged();
+}
+
 void OptionsModel::notifySettingsChanged()
 {
 	for (size_t i = 0; i < observers.size(); i++)
