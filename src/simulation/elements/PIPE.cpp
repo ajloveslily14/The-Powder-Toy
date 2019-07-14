@@ -383,6 +383,7 @@ int Element_PIPE::graphics(GRAPHICS_FUNC_ARGS)
 		default:
 			break;
 		}
+		*pixel_mode |= NO_DECO;
 	}
 	return 0;
 }
@@ -416,7 +417,7 @@ void Element_PIPE::transfer_pipe_to_part(Simulation * sim, Particle *pipe, Parti
 		part->ctype = 0x3FFFFFFF;
 	part->tmp2 = 0;
 	part->flags = 0;
-	part->dcolour = 0;
+	part->dcolour = pipe->dcolour;
 }
 
 //#TPT-Directive ElementHeader Element_PIPE static void transfer_part_to_pipe(Particle *part, Particle *pipe)
@@ -427,6 +428,7 @@ void Element_PIPE::transfer_part_to_pipe(Particle *part, Particle *pipe)
 	pipe->tmp2 = part->life;
 	pipe->pavg[0] = part->tmp;
 	pipe->pavg[1] = part->ctype;
+	pipe->dcolour = part->dcolour;
 }
 
 //#TPT-Directive ElementHeader Element_PIPE static void transfer_pipe_to_pipe(Particle *src, Particle *dest, bool STOR=false)
@@ -447,6 +449,7 @@ void Element_PIPE::transfer_pipe_to_pipe(Particle *src, Particle *dest, bool STO
 	dest->tmp2 = src->tmp2;
 	dest->pavg[0] = src->pavg[0];
 	dest->pavg[1] = src->pavg[1];
+	dest->dcolour = src->dcolour;
 }
 
 //#TPT-Directive ElementHeader Element_PIPE static void pushParticle(Simulation * sim, int i, int count, int original)
