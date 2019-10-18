@@ -83,6 +83,7 @@ class GameController::SearchCallback: public ControllerCallback
 	GameController * cc;
 public:
 	SearchCallback(GameController * cc_) { cc = cc_; }
+
 	void ControllerExit() override
 	{
 		if(cc->search->GetLoadedSave())
@@ -90,7 +91,7 @@ public:
 			try
 			{
 				cc->HistorySnapshot();
-				cc->gameModel->SetSave(cc->search->GetLoadedSave());
+				cc->gameModel->SetSave(cc->search->GetLoadedSave(), cc->gameView->ShiftBehaviour());
 				cc->search->ReleaseLoadedSave();
 			}
 			catch(GameModelException & ex)
@@ -159,7 +160,7 @@ public:
 			if (file->GetError().length())
 				new ErrorMessage("Error loading stamp", file->GetError());
 			else if (cc->localBrowser->GetMoveToFront())
-				Client::Ref().MoveStampToFront(file->GetName());
+				Client::Ref().MoveStampToFront(file->GetDisplayName().ToUtf8());
 			cc->LoadStamp(file->GetGameSave());
 		}
 	}
@@ -190,7 +191,6 @@ GameController::GameController():
 
 #ifdef LUACONSOLE
 	commandInterface = new LuaScriptInterface(this, gameModel);
-	((LuaScriptInterface*)commandInterface)->SetWindow(gameView);
 #else
 	commandInterface = new TPTScriptInterface(this, gameModel);
 #endif
@@ -372,7 +372,7 @@ void GameController::PlaceSave(ui::Point position)
 	if (placeSave)
 	{
 		HistorySnapshot();
-		if (!gameModel->GetSimulation()->Load(placeSave, Client::Ref().GetPrefBool("Simulation.LoadPressure", true), position.X, position.Y))
+		if (!gameModel->GetSimulation()->Load(placeSave, !gameView->ShiftBehaviour(), position.X, position.Y))
 		{
 			gameModel->SetPaused(placeSave->paused | gameModel->GetPaused());
 			Client::Ref().MergeStampAuthorInfo(placeSave->authors);
@@ -445,11 +445,11 @@ void GameController::AdjustBrushSize(int delta, bool logarithmic, bool xAxis, bo
 		newSize.Y = 200;
 
 	if(xAxis)
-		gameModel->GetBrush()->SetRadius(ui::Point(newSize.X, oldSize.Y));
+		SetBrushSize(ui::Point(newSize.X, oldSize.Y));
 	else if(yAxis)
-		gameModel->GetBrush()->SetRadius(ui::Point(oldSize.X, newSize.Y));
+		SetBrushSize(ui::Point(oldSize.X, newSize.Y));
 	else
-		gameModel->GetBrush()->SetRadius(newSize);
+		SetBrushSize(newSize);
 }
 
 void GameController::SetBrushSize(ui::Point newSize)
@@ -610,7 +610,7 @@ void GameController::ToolClick(int toolSelection, ui::Point point)
 
 ByteString GameController::StampRegion(ui::Point point1, ui::Point point2)
 {
-	GameSave * newSave = gameModel->GetSimulation()->Save(gameModel->GetIncludePressure(), point1.X, point1.Y, point2.X, point2.Y);
+	GameSave * newSave = gameModel->GetSimulation()->Save(gameModel->GetIncludePressure() != gameView->ShiftBehaviour(), point1.X, point1.Y, point2.X, point2.Y);
 	if(newSave)
 	{
 		newSave->paused = gameModel->GetPaused();
@@ -629,7 +629,7 @@ ByteString GameController::StampRegion(ui::Point point1, ui::Point point2)
 
 void GameController::CopyRegion(ui::Point point1, ui::Point point2)
 {
-	GameSave * newSave = gameModel->GetSimulation()->Save(gameModel->GetIncludePressure(), point1.X, point1.Y, point2.X, point2.Y);
+	GameSave * newSave = gameModel->GetSimulation()->Save(gameModel->GetIncludePressure() != gameView->ShiftBehaviour(), point1.X, point1.Y, point2.X, point2.Y);
 	if(newSave)
 	{
 		Json::Value clipboardInfo;
@@ -1259,7 +1259,7 @@ void GameController::OpenSearch(String searchText)
 void GameController::OpenLocalSaveWindow(bool asCurrent)
 {
 	Simulation * sim = gameModel->GetSimulation();
-	GameSave * gameSave = sim->Save(gameModel->GetIncludePressure());
+	GameSave * gameSave = sim->Save(gameModel->GetIncludePressure() != gameView->ShiftBehaviour());
 	if(!gameSave)
 	{
 		new ErrorMessage("Error", "Unable to build save.");
@@ -1286,7 +1286,7 @@ void GameController::OpenLocalSaveWindow(bool asCurrent)
 				virtual  ~LocalSaveCallback() {}
 				void FileSaved(SaveFile* file) override
 				{
-					c->gameModel->SetSaveFile(file);
+					c->gameModel->SetSaveFile(file, c->gameView->ShiftBehaviour());
 				}
 			};
 
@@ -1302,7 +1302,7 @@ void GameController::OpenLocalSaveWindow(bool asCurrent)
 			Client::Ref().SaveAuthorInfo(&localSaveInfo);
 			gameSave->authors = localSaveInfo;
 
-			gameModel->SetSaveFile(&tempSave);
+			gameModel->SetSaveFile(&tempSave, gameView->ShiftBehaviour());
 			Client::Ref().MakeDirectory(LOCAL_SAVE_DIR);
 			std::vector<char> saveData = gameSave->Serialise();
 			if (saveData.size() == 0)
@@ -1317,13 +1317,13 @@ void GameController::OpenLocalSaveWindow(bool asCurrent)
 
 void GameController::LoadSaveFile(SaveFile * file)
 {
-	gameModel->SetSaveFile(file);
+	gameModel->SetSaveFile(file, gameView->ShiftBehaviour());
 }
 
 
 void GameController::LoadSave(SaveInfo * save)
 {
-	gameModel->SetSave(save);
+	gameModel->SetSave(save, gameView->ShiftBehaviour());
 }
 
 void GameController::OpenSavePreview(int saveID, int saveDate, bool instant)
@@ -1478,7 +1478,7 @@ void GameController::OpenSaveWindow()
 	if(gameModel->GetUser().UserID)
 	{
 		Simulation * sim = gameModel->GetSimulation();
-		GameSave * gameSave = sim->Save(gameModel->GetIncludePressure());
+		GameSave * gameSave = sim->Save(gameModel->GetIncludePressure() != gameView->ShiftBehaviour());
 		if(!gameSave)
 		{
 			new ErrorMessage("Error", "Unable to build save.");
@@ -1525,7 +1525,7 @@ void GameController::SaveAsCurrent()
 	if(gameModel->GetSave() && gameModel->GetUser().UserID && gameModel->GetUser().Username == gameModel->GetSave()->GetUserName())
 	{
 		Simulation * sim = gameModel->GetSimulation();
-		GameSave * gameSave = sim->Save(gameModel->GetIncludePressure());
+		GameSave * gameSave = sim->Save(gameModel->GetIncludePressure() != gameView->ShiftBehaviour());
 		if(!gameSave)
 		{
 			new ErrorMessage("Error", "Unable to build save.");
@@ -1581,13 +1581,15 @@ void GameController::Vote(int direction)
 
 void GameController::ChangeBrush()
 {
+	auto prev_size = gameModel->GetBrush()->GetRadius();
 	gameModel->SetBrushID(gameModel->GetBrushID()+1);
+	gameModel->GetBrush()->SetRadius(prev_size);
 }
 
 void GameController::ClearSim()
 {
 	HistorySnapshot();
-	gameModel->SetSave(NULL);
+	gameModel->SetSave(NULL, false);
 	gameModel->ClearSimulation();
 }
 
@@ -1614,12 +1616,12 @@ void GameController::ReloadSim()
 	if(gameModel->GetSave() && gameModel->GetSave()->GetGameSave())
 	{
 		HistorySnapshot();
-		gameModel->SetSave(gameModel->GetSave());
+		gameModel->SetSave(gameModel->GetSave(), gameView->ShiftBehaviour());
 	}
 	else if(gameModel->GetSaveFile() && gameModel->GetSaveFile()->GetGameSave())
 	{
 		HistorySnapshot();
-		gameModel->SetSaveFile(gameModel->GetSaveFile());
+		gameModel->SetSaveFile(gameModel->GetSaveFile(), gameView->ShiftBehaviour());
 	}
 }
 
@@ -1713,7 +1715,7 @@ void GameController::NotifyUpdateAvailable(Client * sender)
 
 			updateMessage << "\nNew version:\n ";
 			if (info.Type == UpdateInfo::Beta)
-				updateMessage << info.Major << " " << info.Minor << " Beta, Build " << info.Build;
+				updateMessage << info.Major << "." << info.Minor << " Beta, Build " << info.Build;
 			else if (info.Type == UpdateInfo::Snapshot)
 #if MOD_ID > 0
 				updateMessage << "Mod version " << info.Time;
@@ -1721,7 +1723,7 @@ void GameController::NotifyUpdateAvailable(Client * sender)
 				updateMessage << "Snapshot " << info.Time;
 #endif
 			else if(info.Type == UpdateInfo::Stable)
-				updateMessage << info.Major << " " << info.Minor << " Stable, Build " << info.Build;
+				updateMessage << info.Major << "." << info.Minor << " Stable, Build " << info.Build;
 
 			if (info.Changelog.length())
 				updateMessage << "\n\nChangelog:\n" << info.Changelog;

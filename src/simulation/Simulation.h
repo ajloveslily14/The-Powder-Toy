@@ -113,6 +113,7 @@ public:
 	int pretty_powder;
 	int sandcolour;
 	int sandcolour_frame;
+	int deco_space;
 
 	int Load(GameSave * save, bool includePressure);
 	int Load(GameSave * save, bool includePressure, int x, int y);
@@ -142,7 +143,7 @@ public:
 	void kill_part(int i);
 	bool FloodFillPmapCheck(int x, int y, int type);
 	int flood_prop(int x, int y, size_t propoffset, PropertyValue propvalue, StructProperty::PropertyType proptype);
-	int flood_water(int x, int y, int i, int originaly, int check);
+	bool flood_water(int x, int y, int i);
 	int FloodINST(int x, int y, int fullc, int cm);
 	void detach(int i);
 	bool part_change_type(int i, int x, int y, int t);
@@ -166,6 +167,7 @@ public:
 	void clear_area(int area_x, int area_y, int area_w, int area_h);
 
 	void SetEdgeMode(int newEdgeMode);
+	void SetDecoSpace(int newDecoSpace);
 
 	//Drawing Deco
 	void ApplyDecoration(int x, int y, int colR, int colG, int colB, int colA, int mode);

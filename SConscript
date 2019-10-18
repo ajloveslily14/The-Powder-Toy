@@ -45,6 +45,7 @@ AddSconsOption('msvc', False, False, "Use the Microsoft Visual Studio compiler."
 AddSconsOption("tool", False, True, "Tool prefix appended before gcc/g++.")
 
 AddSconsOption('beta', False, False, "Beta build.")
+AddSconsOption('no-install-prompt', False, False, "Disable the \"do you want to install Powder Toy?\" prompt.")
 AddSconsOption('save-version', False, True, "Save version.")
 AddSconsOption('minor-version', False, True, "Minor version.")
 AddSconsOption('build-number', False, True, "Build number.")
@@ -72,9 +73,10 @@ AddSconsOption('font', False, False, "Build the font editor.")
 AddSconsOption('wall', False, False, "Error on all warnings.")
 AddSconsOption('no-warnings', False, False, "Disable all compiler warnings.")
 AddSconsOption('nolua', False, False, "Disable Lua.")
-AddSconsOption('luajit', False, False, "Enable LuaJIT")
-AddSconsOption('lua52', False, False, "Compile using lua 5.2")
+AddSconsOption('luajit', False, False, "Enable LuaJIT.")
+AddSconsOption('lua52', False, False, "Compile using lua 5.2.")
 AddSconsOption('nofft', False, False, "Disable FFT.")
+AddSconsOption('nohttp', False, False, "Disable http requests and libcurl.")
 AddSconsOption("output", False, True, "Executable output name.")
 
 
@@ -238,9 +240,9 @@ def findLibs(env, conf):
 
 	#Look for SDL
 	runSdlConfig = platform == "Linux" or compilePlatform == "Linux" or platform == "FreeBSD"
-	#if platform == "Darwin" and conf.CheckFramework("SDL"):
-	#	runSdlConfig = False
-	if not conf.CheckLib("SDL2"):
+	if platform == "Darwin" and conf.CheckFramework("SDL2"):
+		runSdlConfig = False
+	elif not conf.CheckLib("SDL2"):
 		FatalError("SDL2 development library not found or not installed")
 
 	if runSdlConfig:
@@ -311,7 +313,7 @@ def findLibs(env, conf):
 			conf.CheckLib('dl')
 
 	#Look for fftw
-	if not GetOption('nofft') and not conf.CheckLib(['fftw3f', 'fftw3f-3', 'libfftw3f-3', 'libfftw3f']):
+	if not GetOption('nofft') and not GetOption('renderer') and not conf.CheckLib(['fftw3f', 'fftw3f-3', 'libfftw3f-3', 'libfftw3f']):
 			FatalError("fftw3f development library not found or not installed")
 
 	#Look for bz2
@@ -327,10 +329,11 @@ def findLibs(env, conf):
 		FatalError("libz not found or not installed")
 
 	#Look for libcurl
-	if not conf.CheckLib(['curl', 'libcurl']):
+	useCurl = not GetOption('nohttp') and not GetOption('renderer')
+	if useCurl and not conf.CheckLib(['curl', 'libcurl']):
 		FatalError("libcurl not found or not installed")
 
-	if platform == "Linux" or compilePlatform == "Linux" or platform == "FreeBSD":
+	if useCurl and (platform == "Linux" or compilePlatform == "Linux" or platform == "FreeBSD"):
 		if GetOption('static'):
 			env.ParseConfig("curl-config --static-libs")
 		else:
@@ -498,10 +501,12 @@ if GetOption('static'):
 
 
 #Add other flags and defines
-if not GetOption('nofft'):
+if not GetOption('nofft') and not GetOption('renderer'):
 	env.Append(CPPDEFINES=['GRAVFFT'])
 if not GetOption('nolua') and not GetOption('renderer') and not GetOption('font'):
 	env.Append(CPPDEFINES=['LUACONSOLE'])
+if GetOption('nohttp') or GetOption('renderer'):
+	env.Append(CPPDEFINES=['NOHTTP'])
 
 if GetOption('opengl') or GetOption('opengl-renderer'):
 	env.Append(CPPDEFINES=['OGLI', 'PIX32OGL'])
@@ -543,6 +548,8 @@ elif GetOption('snapshot'):
 
 if GetOption('beta'):
 	env.Append(CPPDEFINES=['BETA'])
+if GetOption('no-install-prompt'):
+	env.Append(CPPDEFINES=['NO_INSTALL_CHECK'])
 
 
 #Generate list of sources to compile

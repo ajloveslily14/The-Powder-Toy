@@ -46,7 +46,7 @@ void OptionsModel::SetAmbientHeatSimulation(bool state)
 
 bool OptionsModel::GetNewtonianGravity()
 {
-	return sim->grav->ngrav_enable?true:false;
+	return sim->grav->IsEnabled();
 }
 
 void OptionsModel::SetNewtonianGravity(bool state)
@@ -166,6 +166,16 @@ void OptionsModel::SetFastQuit(bool fastquit)
 {
 	ui::Engine::Ref().SetFastQuit(fastquit);
 	Client::Ref().SetPref("FastQuit", bool(fastquit));
+	notifySettingsChanged();
+}
+
+int OptionsModel::GetDecoSpace()
+{
+	return gModel->GetDecoSpace();
+}
+void OptionsModel::SetDecoSpace(int decoSpace)
+{
+	gModel->SetDecoSpace(decoSpace);
 	notifySettingsChanged();
 }
 

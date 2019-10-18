@@ -337,6 +337,10 @@ std::map<ByteString, ByteString> readArguments(int argc, char * argv[])
 			i++;
 			break;
 		}
+		else if (!strncmp(argv[i], "disable-network", 16))
+		{
+			arguments["disable-network"] = "true";
+		}
 	}
 	return arguments;
 }
@@ -395,6 +399,10 @@ void EventProcess(SDL_Event event)
 		engine->onMouseMove(mousex, mousey);
 
 		hasMouseMoved = true;
+		break;
+	case SDL_DROPFILE:
+		engine->onFileDrop(event.drop.file);
+		SDL_free(event.drop.file);
 		break;
 	case SDL_MOUSEBUTTONDOWN:
 		// if mouse hasn't moved yet, sdl will send 0,0. We don't want that
@@ -699,7 +707,11 @@ int main(int argc, char * argv[])
 		proxyString = (Client::Ref().GetPrefByteString("Proxy", ""));
 	}
 
-	Client::Ref().Initialise(proxyString);
+	bool disableNetwork = false;
+	if (arguments.find("disable-network") != arguments.end())
+		disableNetwork = true;
+
+	Client::Ref().Initialise(proxyString, disableNetwork);
 
 	// TODO: maybe bind the maximum allowed scale to screen size somehow
 	if(scale < 1 || scale > 10)

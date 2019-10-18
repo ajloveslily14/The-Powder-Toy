@@ -75,7 +75,7 @@ String *luacon_lastError;
 String lastCode;
 
 int *lua_el_mode;
-LuaSmartRef *lua_el_func, *lua_gr_func;
+LuaSmartRef *lua_el_func, *lua_gr_func, *lua_cd_func;
 
 int getPartIndex_curIdx;
 int tptProperties; //Table for some TPT properties
@@ -144,6 +144,7 @@ LuaScriptInterface::LuaScriptInterface(GameController * c, GameModel * m):
 
 	initSimulationAPI();
 	initInterfaceAPI();
+	SetWindow(c->GetView());
 	initRendererAPI();
 	initElementsAPI();
 	initGraphicsAPI();
@@ -332,12 +333,14 @@ tpt.partsdata = nil");
 	}
 	lua_setfield(l, tptProperties, "eltransition");
 
+	lua_cd_func_v = std::vector<LuaSmartRef>(PT_NUM, l);
+	lua_cd_func = &lua_cd_func_v[0];
 	lua_gr_func_v = std::vector<LuaSmartRef>(PT_NUM, l);
 	lua_gr_func = &lua_gr_func_v[0];
 	lua_el_func_v = std::vector<LuaSmartRef>(PT_NUM, l);
 	lua_el_func = &lua_el_func_v[0];
-	lua_el_mode = new int[PT_NUM];
-	std::fill(lua_el_mode, lua_el_mode + PT_NUM, 0);
+	lua_el_mode_v = std::vector<int>(PT_NUM, 0);
+	lua_el_mode = &lua_el_mode_v[0];
 
 	//make tpt.* a metatable
 	lua_newtable(l);
@@ -393,6 +396,8 @@ int LuaScriptInterface::tpt_index(lua_State *l)
 		return lua_pushnumber(l, m->GetBrush()->GetRadius().Y), 1;
 	else if (!key.compare("brushID"))
 		return lua_pushnumber(l, m->GetBrushID()), 1;
+	else if (!key.compare("decoSpace"))
+		return lua_pushnumber(l, m->GetDecoSpace()), 1;
 
 	//if not a special key, return the value in the table
 	return lua_rawget(l, 1), 1;
@@ -439,6 +444,8 @@ int LuaScriptInterface::tpt_newIndex(lua_State *l)
 		c->SetBrushSize(ui::Point(m->GetBrush()->GetRadius().X, luaL_checkinteger(l, 3)));
 	else if (!key.compare("brushID"))
 		m->SetBrushID(luaL_checkinteger(l, 3));
+	else if (!key.compare("decoSpace"))
+		m->SetDecoSpace(luaL_checkinteger(l, 3));
 	else
 	{
 		//if not a special key, set a value in the table
@@ -1032,9 +1039,7 @@ int LuaScriptInterface::simulation_partProperty(lua_State * l)
 	{
 		int fieldID = lua_tointeger(l, 2);
 		if (fieldID < 0 || fieldID >= (int)properties.size())
-		{
 			return luaL_error(l, "Invalid field ID (%d)", fieldID);
-		}
 		prop = properties.begin() + fieldID;
 	}
 	else if (lua_type(l, 2) == LUA_TSTRING)
@@ -1044,9 +1049,7 @@ int LuaScriptInterface::simulation_partProperty(lua_State * l)
 			return p.Name == fieldName;
 		});
 		if (prop == properties.end())
-		{
 			return luaL_error(l, "Unknown field (%s)", fieldName.c_str());
-		}
 	}
 	else
 	{
@@ -1681,7 +1684,7 @@ int LuaScriptInterface::simulation_loadStamp(lua_State * l)
 
 	if (tempfile)
 	{
-		if (!luacon_sim->Load(tempfile->GetGameSave(), luacon_model->GetIncludePressure(), x, y))
+		if (!luacon_sim->Load(tempfile->GetGameSave(), !luacon_controller->GetView()->ShiftBehaviour(), x, y))
 		{
 			//luacon_sim->sys_pause = (tempfile->GetGameSave()->paused | luacon_model->GetPaused())?1:0;
 			lua_pushinteger(l, 1);
@@ -1890,29 +1893,6 @@ int LuaScriptInterface::simulation_canMove(lua_State * l)
 	}
 }
 
-int PartsClosure(lua_State * l)
-{
-	int i = lua_tointeger(l, lua_upvalueindex(1));
-	do
-	{
-		if(i>=NPART)
-			return 0;
-		else
-			i++;
-	} while(!luacon_sim->parts[i].type);
-	lua_pushnumber(l, i);
-	lua_replace(l, lua_upvalueindex(1));
-	lua_pushnumber(l, i);
-	return 1;
-}
-
-int LuaScriptInterface::simulation_parts(lua_State * l)
-{
-	lua_pushnumber(l, -1);
-	lua_pushcclosure(l, PartsClosure, 1);
-	return 1;
-}
-
 int BrushClosure(lua_State * l)
 {
 	// see Simulation::ToolBrush
@@ -2005,6 +1985,28 @@ int LuaScriptInterface::simulation_brush(lua_State * l)
 	brushList[brushID]->SetRadius(tempRadius);
 
 	lua_pushcclosure(l, BrushClosure, 9);
+	return 1;
+}
+
+int PartsClosure(lua_State *l)
+{
+	for (int i = lua_tointeger(l, lua_upvalueindex(1)); i <= luacon_sim->parts_lastActiveIndex; ++i)
+	{
+		if (luacon_sim->parts[i].type)
+		{
+			lua_pushnumber(l, i + 1);
+			lua_replace(l, lua_upvalueindex(1));
+			lua_pushnumber(l, i);
+			return 1;
+		}
+	}
+	return 0;
+}
+
+int LuaScriptInterface::simulation_parts(lua_State *l)
+{
+	lua_pushnumber(l, 0);
+	lua_pushcclosure(l, PartsClosure, 1);
 	return 1;
 }
 
@@ -2430,7 +2432,6 @@ void LuaScriptInterface::initElementsAPI()
 	SETCONST(l, PROP_LIFE_KILL_DEC);
 	SETCONST(l, PROP_SPARKSETTLE);
 	SETCONST(l, PROP_NOAMBHEAT);
-	SETCONST(l, PROP_DRAWONCTYPE);
 	SETCONST(l, PROP_NOCTYPEDRAW);
 	SETCONST(l, FLAG_STAGNANT);
 	SETCONST(l, FLAG_SKIPMOVE);
@@ -2683,6 +2684,25 @@ int LuaScriptInterface::elements_allocate(lua_State * l)
 	return 1;
 }
 
+static bool luaCtypeDrawWrapper(CTYPEDRAW_FUNC_ARGS)
+{
+	bool ret = false;
+	if (lua_cd_func[sim->parts[i].type])
+	{
+		lua_rawgeti(luacon_ci->l, LUA_REGISTRYINDEX, lua_cd_func[sim->parts[i].type]);
+		lua_pushinteger(luacon_ci->l, i);
+		lua_pushinteger(luacon_ci->l, t);
+		lua_pushinteger(luacon_ci->l, v);
+		if (lua_pcall(luacon_ci->l, 3, 1, 0))
+		{
+			luacon_ci->Log(CommandInterface::LogError, luacon_geterror());
+		}
+		ret = luaL_optinteger(luacon_ci->l, -1, 0);
+		lua_pop(luacon_ci->l, 1);
+	}
+	return ret;
+}
+
 int LuaScriptInterface::elements_element(lua_State * l)
 {
 	int id = luaL_checkinteger(l, 1);
@@ -2716,7 +2736,7 @@ int LuaScriptInterface::elements_element(lua_State * l)
 		{
 			lua_el_func[id].Clear();
 			lua_el_mode[id] = 0;
-			luacon_sim->elements[id].Update = NULL;
+			luacon_sim->elements[id].Update = nullptr;
 		}
 		lua_pop(l, 1);
 
@@ -2728,7 +2748,20 @@ int LuaScriptInterface::elements_element(lua_State * l)
 		else if (lua_type(l, -1) == LUA_TBOOLEAN && !lua_toboolean(l, -1))
 		{
 			lua_gr_func[id].Clear();
-			luacon_sim->elements[id].Graphics = NULL;
+			luacon_sim->elements[id].Graphics = nullptr;
+		}
+		lua_pop(l, 1);
+
+		lua_getfield(l, -1, "CtypeDraw");
+		if (lua_type(l, -1) == LUA_TFUNCTION)
+		{
+			lua_cd_func[id].Assign(-1);
+			luacon_sim->elements[id].CtypeDraw = luaCtypeDrawWrapper;
+		}
+		else if (lua_type(l, -1) == LUA_TBOOLEAN && !lua_toboolean(l, -1))
+		{
+			lua_cd_func[id].Clear();
+			luacon_sim->elements[id].CtypeDraw = nullptr;
 		}
 		lua_pop(l, 1);
 
@@ -2832,6 +2865,20 @@ int LuaScriptInterface::elements_property(lua_State * l)
 				luacon_sim->elements[id].Graphics = NULL;
 			}
 			luacon_ren->graphicscache[id].isready = 0;
+			return 0;
+		}
+		else if (propertyName == "CtypeDraw")
+		{
+			if (lua_type(l, 3) == LUA_TFUNCTION)
+			{
+				lua_cd_func[id].Assign(3);
+				luacon_sim->elements[id].CtypeDraw = luaCtypeDrawWrapper;
+			}
+			else if (lua_type(l, 3) == LUA_TBOOLEAN && !lua_toboolean(l, -1))
+			{
+				lua_cd_func[id].Clear();
+				luacon_sim->elements[id].CtypeDraw = nullptr;
+			}
 			return 0;
 		}
 		else
@@ -3736,9 +3783,10 @@ LuaScriptInterface::~LuaScriptInterface() {
 		component_and_ref.second.Clear();
 		component_and_ref.first->owner_ref = component_and_ref.second;
 	}
-	delete[] lua_el_mode;
+	lua_el_mode_v.clear();
 	lua_el_func_v.clear();
 	lua_gr_func_v.clear();
+	lua_cd_func_v.clear();
 	lua_close(l);
 	delete legacy;
 }

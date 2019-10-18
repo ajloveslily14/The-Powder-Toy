@@ -76,6 +76,7 @@ private:
 	ui::Colour colour;
 
 	int edgeMode;
+	int decoSpace;
 
 	String infoTip;
 	String toolTip;
@@ -109,6 +110,8 @@ public:
 
 	void SetEdgeMode(int edgeMode);
 	int GetEdgeMode();
+	void SetDecoSpace(int decoSpace);
+	int GetDecoSpace();
 
 	void SetActiveColourPreset(size_t preset);
 	size_t GetActiveColourPreset();
@@ -162,8 +165,8 @@ public:
 	void SetVote(int direction);
 	SaveInfo * GetSave();
 	SaveFile * GetSaveFile();
-	void SetSave(SaveInfo * newSave);
-	void SetSaveFile(SaveFile * newSave);
+	void SetSave(SaveInfo * newSave, bool invertIncludePressure);
+	void SetSaveFile(SaveFile * newSave, bool invertIncludePressure);
 	void AddObserver(GameView * observer);
 
 	bool GetPaused();

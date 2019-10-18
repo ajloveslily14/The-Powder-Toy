@@ -410,12 +410,35 @@ OptionsView::OptionsView():
 	includePressure = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "Include Pressure", "");
 	autowidth(includePressure);
 	includePressure->SetActionCallback(new IncludePressureAction(this));
-	tempLabel = new ui::Label(ui::Point(includePressure->Position.X+Graphics::textwidth(includePressure->GetText())+20, currentY), ui::Point(1, 16), "\bg- When saving, loading, stamping, etc.");
+	tempLabel = new ui::Label(ui::Point(includePressure->Position.X+Graphics::textwidth(includePressure->GetText())+20, currentY), ui::Point(1, 16), "\bg- When saving, copying, stamping, etc.");
 	autowidth(tempLabel);
 	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	scrollPanel->AddChild(tempLabel);
 	scrollPanel->AddChild(includePressure);
+
+	class DecoSpaceAction: public ui::DropDownAction
+	{
+		OptionsView * v;
+	public:
+		DecoSpaceAction(OptionsView * v): v(v) { }
+		void OptionChanged(ui::DropDown * sender, std::pair<String, int> option) override {
+			v->c->SetDecoSpace(option.second);
+		}
+	};
+	currentY+=20;
+	decoSpace = new ui::DropDown(ui::Point(8, currentY), ui::Point(60, 16));
+	decoSpace->SetActionCallback(new DecoSpaceAction(this));
+	scrollPanel->AddChild(decoSpace);
+	decoSpace->AddOption(std::pair<String, int>("sRGB", 0));
+	decoSpace->AddOption(std::pair<String, int>("Linear", 1));
+	decoSpace->AddOption(std::pair<String, int>("Gamma 2.2", 2));
+	decoSpace->AddOption(std::pair<String, int>("Gamma 1.8", 3));
+
+	tempLabel = new ui::Label(ui::Point(decoSpace->Position.X+decoSpace->Size.X+3, currentY), ui::Point(Size.X-40, 16), "\bg- Colour space used by decoration tools");
+	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
+	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
+	scrollPanel->AddChild(tempLabel);
 
 	class DataFolderAction: public ui::ButtonAction
 	{
@@ -477,6 +500,7 @@ void OptionsView::NotifySettingsChanged(OptionsModel * sender)
 	waterEqualisation->SetChecked(sender->GetWaterEqualisation());
 	airMode->SetOption(sender->GetAirMode());
 	gravityMode->SetOption(sender->GetGravityMode());
+	decoSpace->SetOption(sender->GetDecoSpace());
 	edgeMode->SetOption(sender->GetEdgeMode());
 	scale->SetOption(sender->GetScale());
 	resizable->SetChecked(sender->GetResizable());

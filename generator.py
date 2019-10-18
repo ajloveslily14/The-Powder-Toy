@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import re, os, shutil, string, sys
 
 def generateElements(elementFiles, outputCpp, outputH):
@@ -234,6 +235,3 @@ std::vector<SimTool*> GetTools()
 
 generateElements(os.listdir("src/simulation/elements"), "generated/ElementClasses.cpp", "generated/ElementClasses.h")
 generateTools(os.listdir("src/simulation/simtools"), "generated/ToolClasses.cpp", "generated/ToolClasses.h")
-
-with open("vsproject.py") as f:
-	exec(compile(f.read(), "vsproject.py", 'exec'))

@@ -25,6 +25,7 @@
 
 #include "gui/Style.h"
 #include "gui/dialogues/ConfirmPrompt.h"
+#include "gui/dialogues/ErrorMessage.h"
 #include "gui/dialogues/InformationMessage.h"
 #include "gui/interface/Button.h"
 #include "gui/interface/Colour.h"
@@ -200,7 +201,6 @@ GameView::GameView():
 	screenshotIndex(0),
 	recording(false),
 	recordingFolder(0),
-	recordingIndex(0),
 	currentPoint(ui::Point(0, 0)),
 	lastPoint(ui::Point(0, 0)),
 	ren(NULL),
@@ -1069,7 +1069,6 @@ int GameView::Record(bool record)
 	if (!record)
 	{
 		recording = false;
-		recordingIndex = 0;
 		recordingFolder = 0;
 	}
 	else if (!recording)
@@ -1083,7 +1082,6 @@ int GameView::Record(bool record)
 			Client::Ref().MakeDirectory("recordings");
 			Client::Ref().MakeDirectory(ByteString::Build("recordings", PATH_SEP, recordingFolder).c_str());
 			recording = true;
-			recordingIndex = 0;
 		}
 	}
 	return recordingFolder;
@@ -1617,6 +1615,8 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 		if (stampList.size())
 		{
 			SaveFile *saveFile = Client::Ref().GetStamp(stampList[0]);
+			if (!saveFile || !saveFile->GetGameSave())
+				break;
 			c->LoadStamp(saveFile->GetGameSave());
 			delete saveFile;
 			selectPoint1 = selectPoint2 = mousePosition;
@@ -1709,6 +1709,29 @@ void GameView::OnBlur()
 	isMouseDown = false;
 	drawMode = DrawPoints;
 	c->Blur();
+}
+
+void GameView::OnFileDrop(ByteString filename)
+{
+	if (!(filename.EndsWith(".cps") || filename.EndsWith(".stm")))
+	{
+		new ErrorMessage("Error loading save", "Dropped file is not a TPT save file (.cps or .stm format)");
+		return;
+	}
+
+	SaveFile *saveFile = Client::Ref().LoadSaveFile(filename);
+	if (!saveFile)
+		return;
+	if (saveFile->GetError().length())
+	{
+		new ErrorMessage("Error loading save", "Dropped save file could not be loaded: " + saveFile->GetError());
+		return;
+	}
+	c->LoadSaveFile(saveFile);
+	delete saveFile;
+
+	// hide the info text if it's not already hidden
+	introText = 0;
 }
 
 void GameView::OnTick(float dt)
@@ -1970,6 +1993,7 @@ void GameView::NotifyPlaceSaveChanged(GameModel * sender)
 	placeSaveOffset = ui::Point(0, 0);
 	if(sender->GetPlaceSave())
 	{
+		SaveRenderer::Ref().CopyModes(sender->GetRenderer());
 		placeSaveThumb = SaveRenderer::Ref().Render(sender->GetPlaceSave());
 		selectMode = PlaceSave;
 		selectPoint2 = mousePosition;
@@ -2279,9 +2303,9 @@ void GameView::OnDraw()
 		}
 	}
 
-	if(recording)
+	if (recording)
 	{
-		String sampleInfo = String::Build(recordingIndex, ". ", String(0xE00E), " REC");
+		String sampleInfo = String::Build("#", screenshotIndex, " ", String(0xE00E), " REC");
 
 		int textWidth = Graphics::textwidth(sampleInfo);
 		g->fillrect(XRES-20-textWidth, 12, textWidth+8, 15, 0, 0, 0, 255*0.5);

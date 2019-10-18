@@ -54,7 +54,7 @@ void initLegacyProps()
 			legacyTransitionNames.insert(std::pair<ByteString, StructProperty>("presLowType", prop));
 		else if (prop.Name == "HighPressure")
 			legacyTransitionNames.insert(std::pair<ByteString, StructProperty>("presHighValue", prop));
-		else if (prop.Name == "HighressureTransition")
+		else if (prop.Name == "HighPressureTransition")
 			legacyTransitionNames.insert(std::pair<ByteString, StructProperty>("presHighType", prop));
 		else if (prop.Name == "LowTemperature")
 			legacyTransitionNames.insert(std::pair<ByteString, StructProperty>("tempLowValue", prop));
@@ -1226,7 +1226,7 @@ int luatpt_gravity(lua_State* l)
 	int acount = lua_gettop(l);
 	if (acount == 0)
 	{
-		lua_pushinteger(l, luacon_sim->grav->ngrav_enable);
+		lua_pushinteger(l, luacon_sim->grav->IsEnabled() ? 1 : 0);
 		return 1;
 	}
 	int gravstate = luaL_checkint(l, 1);

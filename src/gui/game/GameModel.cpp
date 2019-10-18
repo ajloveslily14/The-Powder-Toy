@@ -47,7 +47,8 @@ GameModel::GameModel():
 	activeColourPreset(0),
 	colourSelector(false),
 	colour(255, 0, 0, 255),
-	edgeMode(0)
+	edgeMode(0),
+	decoSpace(0)
 {
 	sim = new Simulation();
 	ren = new Renderer(ui::Engine::Ref().g, sim);
@@ -92,6 +93,8 @@ GameModel::GameModel():
 	//Load config into simulation
 	edgeMode = Client::Ref().GetPrefInteger("Simulation.EdgeMode", 0);
 	sim->SetEdgeMode(edgeMode);
+	decoSpace = Client::Ref().GetPrefInteger("Simulation.DecoSpace", 0);
+	sim->SetDecoSpace(decoSpace);
 	int ngrav_enable = Client::Ref().GetPrefInteger("Simulation.NewtonianGravity", 0);
 	if (ngrav_enable)
 		sim->grav->start_grav_async();
@@ -174,9 +177,10 @@ GameModel::~GameModel()
 	Client::Ref().SetPref("Renderer.DebugMode", ren->debugLines); //These two should always be equivalent, even though they are different things
 
 	Client::Ref().SetPref("Simulation.EdgeMode", edgeMode);
-	Client::Ref().SetPref("Simulation.NewtonianGravity", sim->grav->ngrav_enable);
+	Client::Ref().SetPref("Simulation.NewtonianGravity", sim->grav->IsEnabled());
 	Client::Ref().SetPref("Simulation.AmbientHeat", sim->aheat_enable);
 	Client::Ref().SetPref("Simulation.PrettyPowder", sim->pretty_powder);
+	Client::Ref().SetPref("Simulation.DecoSpace", sim->deco_space);
 
 	Client::Ref().SetPref("Decoration.Red", (int)colour.Red);
 	Client::Ref().SetPref("Decoration.Green", (int)colour.Green);
@@ -450,6 +454,17 @@ int GameModel::GetEdgeMode()
 	return this->edgeMode;
 }
 
+void GameModel::SetDecoSpace(int decoSpace)
+{
+	sim->SetDecoSpace(decoSpace);
+	this->decoSpace = sim->deco_space;
+}
+
+int GameModel::GetDecoSpace()
+{
+	return this->decoSpace;
+}
+
 std::deque<Snapshot*> GameModel::GetHistory()
 {
 	return history;
@@ -635,7 +650,7 @@ SaveInfo * GameModel::GetSave()
 	return currentSave;
 }
 
-void GameModel::SetSave(SaveInfo * newSave)
+void GameModel::SetSave(SaveInfo * newSave, bool invertIncludePressure)
 {
 	if(currentSave != newSave)
 	{
@@ -664,7 +679,7 @@ void GameModel::SetSave(SaveInfo * newSave)
 			sim->grav->stop_grav_async();
 		sim->clear_sim();
 		ren->ClearAccumulation();
-		if (!sim->Load(saveData, GetIncludePressure()))
+		if (!sim->Load(saveData, !invertIncludePressure))
 		{
 			// This save was created before logging existed
 			// Add in the correct info
@@ -696,7 +711,7 @@ SaveFile * GameModel::GetSaveFile()
 	return currentFile;
 }
 
-void GameModel::SetSaveFile(SaveFile * newSave)
+void GameModel::SetSaveFile(SaveFile * newSave, bool invertIncludePressure)
 {
 	if(currentFile != newSave)
 	{
@@ -719,17 +734,17 @@ void GameModel::SetSaveFile(SaveFile * newSave)
 		sim->legacy_enable = saveData->legacyEnable;
 		sim->water_equal_test = saveData->waterEEnabled;
 		sim->aheat_enable = saveData->aheatEnable;
-		if(saveData->gravityEnable && !sim->grav->ngrav_enable)
+		if(saveData->gravityEnable && !sim->grav->IsEnabled())
 		{
 			sim->grav->start_grav_async();
 		}
-		else if(!saveData->gravityEnable && sim->grav->ngrav_enable)
+		else if(!saveData->gravityEnable && sim->grav->IsEnabled())
 		{
 			sim->grav->stop_grav_async();
 		}
 		sim->clear_sim();
 		ren->ClearAccumulation();
-		if (!sim->Load(saveData, GetIncludePressure()))
+		if (!sim->Load(saveData, !invertIncludePressure))
 		{
 			Client::Ref().OverwriteAuthorInfo(saveData->authors);
 		}
@@ -995,7 +1010,7 @@ void GameModel::SetNewtonianGravity(bool newtonainGravity)
 
 bool GameModel::GetNewtonianGrvity()
 {
-    return sim->grav->ngrav_enable;
+    return sim->grav->IsEnabled();
 }
 
 void GameModel::ShowGravityGrid(bool showGrid)

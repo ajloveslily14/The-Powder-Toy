@@ -69,7 +69,6 @@ private:
 	int screenshotIndex;
 	bool recording;
 	int recordingFolder;
-	int recordingIndex;
 
 	ui::Point currentPoint, lastPoint;
 	GameController * c;
@@ -196,6 +195,7 @@ public:
 	void OnTick(float dt) override;
 	void OnDraw() override;
 	void OnBlur() override;
+	void OnFileDrop(ByteString filename) override;
 
 	//Top-level handlers, for Lua interface
 	void DoExit() override;

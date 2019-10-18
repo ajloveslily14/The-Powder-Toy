@@ -241,9 +241,9 @@ int Simulation::Load(GameSave * save, bool includePressure, int fullX, int fullY
 			soapList.insert(std::pair<unsigned int, unsigned int>(n, i));
 			break;
 
-			// List of elements that load pavg with a multiplicative bias of 2**6
-			// (or not at all if pressure is not loaded).
-			// If you change this list, change it in GameSave::serialiseOPS and GameSave::readOPS too!
+		// List of elements that load pavg with a multiplicative bias of 2**6
+		// (or not at all if pressure is not loaded).
+		// If you change this list, change it in GameSave::serialiseOPS and GameSave::readOPS too!
 		case PT_QRTZ:
 		case PT_GLAS:
 		case PT_TUNG:
@@ -492,7 +492,7 @@ void Simulation::SaveSimOptions(GameSave * gameSave)
 	gameSave->edgeMode = edgeMode;
 	gameSave->legacyEnable = legacy_enable;
 	gameSave->waterEEnabled = water_equal_test;
-	gameSave->gravityEnable = grav->ngrav_enable;
+	gameSave->gravityEnable = grav->IsEnabled();
 	gameSave->aheatEnable = aheat_enable;
 }
 
@@ -538,7 +538,7 @@ void Simulation::Restore(const Snapshot & snap)
 	RecalcFreeParticles(false);
 	std::copy(snap.PortalParticles.begin(), snap.PortalParticles.end(), &portalp[0][0][0]);
 	std::copy(snap.WirelessData.begin(), snap.WirelessData.end(), &wireless[0][0]);
-	if (grav->ngrav_enable)
+	if (grav->IsEnabled())
 	{
 		grav->Clear();
 		std::copy(snap.GravVelocityX.begin(), snap.GravVelocityX.end(), gravx);
@@ -706,7 +706,7 @@ SimulationSample Simulation::GetSample(int x, int y)
 		sample.AirVelocityX = vx[y/CELL][x/CELL];
 		sample.AirVelocityY = vy[y/CELL][x/CELL];
 
-		if(grav->ngrav_enable)
+		if(grav->IsEnabled())
 		{
 			sample.Gravity = gravp[(y/CELL)*(XRES/CELL)+(x/CELL)];
 			sample.GravityVelocityX = gravx[(y/CELL)*(XRES/CELL)+(x/CELL)];
@@ -726,9 +726,6 @@ int Simulation::FloodINST(int x, int y, int fullc, int cm)
 {
 	int c = TYP(fullc);
 	int x1, x2;
-	int coord_stack_limit = XRES*YRES;
-	unsigned short (*coord_stack)[2];
-	int coord_stack_size = 0;
 	int created_something = 0;
 
 	if (c>=PT_NUM)
@@ -749,184 +746,198 @@ int Simulation::FloodINST(int x, int y, int fullc, int cm)
 	if (TYP(pmap[y][x])!=cm || parts[ID(pmap[y][x])].life!=0)
 		return 1;
 
-	coord_stack = (short unsigned int (*)[2])malloc(sizeof(unsigned short)*2*coord_stack_limit);
-	coord_stack[coord_stack_size][0] = x;
-	coord_stack[coord_stack_size][1] = y;
-	coord_stack_size++;
+	CoordStack cs;
 
-	do
+	cs.push(x, y);
+
+	try
 	{
-		coord_stack_size--;
-		x = coord_stack[coord_stack_size][0];
-		y = coord_stack[coord_stack_size][1];
-		x1 = x2 = x;
-		// go left as far as possible
-		while (x1>=CELL)
+		do
 		{
-			if (TYP(pmap[y][x1-1])!=cm || parts[ID(pmap[y][x1-1])].life!=0)
+			cs.pop(x, y);
+			x1 = x2 = x;
+			// go left as far as possible
+			while (x1>=CELL)
 			{
-				break;
-			}
-			x1--;
-		}
-		// go right as far as possible
-		while (x2<XRES-CELL)
-		{
-			if (TYP(pmap[y][x2+1])!=cm || parts[ID(pmap[y][x2+1])].life!=0)
-			{
-				break;
-			}
-			x2++;
-		}
-		// fill span
-		for (x=x1; x<=x2; x++)
-		{
-			if (create_part(-1, x, y, c, ID(fullc))>=0)
-				created_something = 1;
-		}
-
-		// add vertically adjacent pixels to stack
-		// (wire crossing for INST)
-		if (y>=CELL+1 && x1==x2 &&
-				PMAP_CMP_CONDUCTIVE(pmap[y-1][x1-1], cm) && PMAP_CMP_CONDUCTIVE(pmap[y-1][x1], cm) && PMAP_CMP_CONDUCTIVE(pmap[y-1][x1+1], cm) &&
-				!PMAP_CMP_CONDUCTIVE(pmap[y-2][x1-1], cm) && PMAP_CMP_CONDUCTIVE(pmap[y-2][x1], cm) && !PMAP_CMP_CONDUCTIVE(pmap[y-2][x1+1], cm))
-		{
-			// travelling vertically up, skipping a horizontal line
-			if (TYP(pmap[y-2][x1])==cm && !parts[ID(pmap[y-2][x1])].life)
-			{
-				coord_stack[coord_stack_size][0] = x1;
-				coord_stack[coord_stack_size][1] = y-2;
-				coord_stack_size++;
-				if (coord_stack_size>=coord_stack_limit)
+				if (TYP(pmap[y][x1-1])!=cm || parts[ID(pmap[y][x1-1])].life!=0)
 				{
-					free(coord_stack);
-					return -1;
+					break;
 				}
+				x1--;
 			}
-		}
-		else if (y>=CELL+1)
-		{
+			// go right as far as possible
+			while (x2<XRES-CELL)
+			{
+				if (TYP(pmap[y][x2+1])!=cm || parts[ID(pmap[y][x2+1])].life!=0)
+				{
+					break;
+				}
+				x2++;
+			}
+			// fill span
 			for (x=x1; x<=x2; x++)
 			{
-				if (TYP(pmap[y-1][x])==cm && !parts[ID(pmap[y-1][x])].life)
+				if (create_part(-1, x, y, c, ID(fullc))>=0)
+					created_something = 1;
+			}
+
+			// add vertically adjacent pixels to stack
+			// (wire crossing for INST)
+			if (y>=CELL+1 && x1==x2 &&
+					PMAP_CMP_CONDUCTIVE(pmap[y-1][x1-1], cm) && PMAP_CMP_CONDUCTIVE(pmap[y-1][x1], cm) && PMAP_CMP_CONDUCTIVE(pmap[y-1][x1+1], cm) &&
+					!PMAP_CMP_CONDUCTIVE(pmap[y-2][x1-1], cm) && PMAP_CMP_CONDUCTIVE(pmap[y-2][x1], cm) && !PMAP_CMP_CONDUCTIVE(pmap[y-2][x1+1], cm))
+			{
+				// travelling vertically up, skipping a horizontal line
+				if (TYP(pmap[y-2][x1])==cm && !parts[ID(pmap[y-2][x1])].life)
 				{
-					if (x==x1 || x==x2 || y>=YRES-CELL-1 || !PMAP_CMP_CONDUCTIVE(pmap[y+1][x], cm) || PMAP_CMP_CONDUCTIVE(pmap[y+1][x+1], cm) || PMAP_CMP_CONDUCTIVE(pmap[y+1][x-1], cm))
+						cs.push(x1, y-2);
+				}
+			}
+			else if (y>=CELL+1)
+			{
+				for (x=x1; x<=x2; x++)
+				{
+					if (TYP(pmap[y-1][x])==cm && !parts[ID(pmap[y-1][x])].life)
 					{
-						// if at the end of a horizontal section, or if it's a T junction or not a 1px wire crossing
-						coord_stack[coord_stack_size][0] = x;
-						coord_stack[coord_stack_size][1] = y-1;
-						coord_stack_size++;
-						if (coord_stack_size>=coord_stack_limit)
+						if (x==x1 || x==x2 || y>=YRES-CELL-1 || !PMAP_CMP_CONDUCTIVE(pmap[y+1][x], cm) || PMAP_CMP_CONDUCTIVE(pmap[y+1][x+1], cm) || PMAP_CMP_CONDUCTIVE(pmap[y+1][x-1], cm))
 						{
-							free(coord_stack);
-							return -1;
+							// if at the end of a horizontal section, or if it's a T junction or not a 1px wire crossing
+							cs.push(x, y-1);
 						}
 					}
 				}
 			}
-		}
 
-		if (y<YRES-CELL-1 && x1==x2 &&
-				PMAP_CMP_CONDUCTIVE(pmap[y+1][x1-1], cm) && PMAP_CMP_CONDUCTIVE(pmap[y+1][x1], cm) && PMAP_CMP_CONDUCTIVE(pmap[y+1][x1+1], cm) &&
-				!PMAP_CMP_CONDUCTIVE(pmap[y+2][x1-1], cm) && PMAP_CMP_CONDUCTIVE(pmap[y+2][x1], cm) && !PMAP_CMP_CONDUCTIVE(pmap[y+2][x1+1], cm))
-		{
-			// travelling vertically down, skipping a horizontal line
-			if (TYP(pmap[y+2][x1])==cm && !parts[ID(pmap[y+2][x1])].life)
+			if (y<YRES-CELL-1 && x1==x2 &&
+					PMAP_CMP_CONDUCTIVE(pmap[y+1][x1-1], cm) && PMAP_CMP_CONDUCTIVE(pmap[y+1][x1], cm) && PMAP_CMP_CONDUCTIVE(pmap[y+1][x1+1], cm) &&
+					!PMAP_CMP_CONDUCTIVE(pmap[y+2][x1-1], cm) && PMAP_CMP_CONDUCTIVE(pmap[y+2][x1], cm) && !PMAP_CMP_CONDUCTIVE(pmap[y+2][x1+1], cm))
 			{
-				coord_stack[coord_stack_size][0] = x1;
-				coord_stack[coord_stack_size][1] = y+2;
-				coord_stack_size++;
-				if (coord_stack_size>=coord_stack_limit)
+				// travelling vertically down, skipping a horizontal line
+				if (TYP(pmap[y+2][x1])==cm && !parts[ID(pmap[y+2][x1])].life)
 				{
-					free(coord_stack);
-					return -1;
+					cs.push(x1, y+2);
 				}
 			}
-		}
-		else if (y<YRES-CELL-1)
-		{
-			for (x=x1; x<=x2; x++)
+			else if (y<YRES-CELL-1)
 			{
-				if (TYP(pmap[y+1][x])==cm && !parts[ID(pmap[y+1][x])].life)
+				for (x=x1; x<=x2; x++)
 				{
-					if (x==x1 || x==x2 || y<0 || !PMAP_CMP_CONDUCTIVE(pmap[y-1][x], cm) || PMAP_CMP_CONDUCTIVE(pmap[y-1][x+1], cm) || PMAP_CMP_CONDUCTIVE(pmap[y-1][x-1], cm))
+					if (TYP(pmap[y+1][x])==cm && !parts[ID(pmap[y+1][x])].life)
 					{
-						// if at the end of a horizontal section, or if it's a T junction or not a 1px wire crossing
-						coord_stack[coord_stack_size][0] = x;
-						coord_stack[coord_stack_size][1] = y+1;
-						coord_stack_size++;
-						if (coord_stack_size>=coord_stack_limit)
+						if (x==x1 || x==x2 || y<0 || !PMAP_CMP_CONDUCTIVE(pmap[y-1][x], cm) || PMAP_CMP_CONDUCTIVE(pmap[y-1][x+1], cm) || PMAP_CMP_CONDUCTIVE(pmap[y-1][x-1], cm))
 						{
-							free(coord_stack);
-							return -1;
+							// if at the end of a horizontal section, or if it's a T junction or not a 1px wire crossing
+							cs.push(x, y+1);
 						}
-					}
 
+					}
 				}
 			}
-		}
-	} while (coord_stack_size>0);
-	free(coord_stack);
+		} while (cs.getSize()>0);
+	}
+	catch (std::exception& e)
+	{
+		std::cerr << e.what() << std::endl;
+		return -1;
+	}
+
 	return created_something;
 }
 
-int Simulation::flood_water(int x, int y, int i, int originaly, int check)
+bool Simulation::flood_water(int x, int y, int i)
 {
-	int x1 = 0,x2 = 0;
-	// go left as far as possible
-	x1 = x2 = x;
-	if (!pmap[y][x])
-		return 1;
+	int x1, x2, originalY = y;
+	int r = pmap[y][x];
+	if (!r)
+		return false;
 
-	while (x1>=CELL)
-	{
-		if ((elements[TYP(pmap[y][x1-1])].Falldown) != 2)
-		{
-			break;
-		}
-		x1--;
-	}
-	while (x2<XRES-CELL)
-	{
-		if ((elements[TYP(pmap[y][x2+1])].Falldown) != 2)
-		{
-			break;
-		}
-		x2++;
-	}
+	// Bitmap for checking where we've already looked
+	auto bitmapPtr = std::unique_ptr<char[]>(new char[XRES * YRES]);
+	char *bitmap = bitmapPtr.get();
+	std::fill(&bitmap[0], &bitmap[XRES * YRES], 0);
 
-	// fill span
-	for (x=x1; x<=x2; x++)
+	try
 	{
-		if (check)
-			parts[ID(pmap[y][x])].flags &= ~FLAG_WATEREQUAL;//flag it as checked (different from the original particle's checked flag)
-		else
-			parts[ID(pmap[y][x])].flags |= FLAG_WATEREQUAL;
-		//check above, maybe around other sides too?
-		if ( ((y-1) > originaly) && !pmap[y-1][x] && eval_move(parts[i].type, x, y-1, NULL))
+		CoordStack cs;
+		cs.push(x, y);
+		do
 		{
-			int oldx = (int)(parts[i].x + 0.5f);
-			int oldy = (int)(parts[i].y + 0.5f);
-			pmap[y-1][x] = pmap[oldy][oldx];
-			pmap[oldy][oldx] = 0;
-			parts[i].x = x;
-			parts[i].y = y-1;
-			return 0;
-		}
-	}
-	// fill children
+			cs.pop(x, y);
+			x1 = x2 = x;
+			while (x1 >= CELL)
+			{
+				if (elements[TYP(pmap[y][x1 - 1])].Falldown != 2 || bitmap[(y * XRES) + x1 - 1])
+					break;
+				x1--;
+			}
+			while (x2 < XRES-CELL)
+			{
+				if (elements[TYP(pmap[y][x2 + 1])].Falldown != 2 || bitmap[(y * XRES) + x1 - 1])
+					break;
+				x2++;
+			}
+			for (int x = x1; x <= x2; x++)
+			{
+				if ((y - 1) > originalY && !pmap[y - 1][x])
+				{
+					// Try to move the water to a random position on this line, because there's probably a free location somewhere
+					int randPos = RNG::Ref().between(x, x2);
+					if (!pmap[y - 1][randPos] && eval_move(parts[i].type, randPos, y - 1, nullptr))
+						x = randPos;
+					// Couldn't move to random position, so try the original position on the left
+					else if (!eval_move(parts[i].type, x, y - 1, nullptr))
+						continue;
 
-	if (y>=CELL+1)
-		for (x=x1; x<=x2; x++)
-			if ((elements[TYP(pmap[y-1][x])].Falldown)==2 && (parts[ID(pmap[y-1][x])].flags & FLAG_WATEREQUAL) == check)
-				if (!flood_water(x, y-1, i, originaly, check))
-					return 0;
-	if (y<YRES-CELL-1)
-		for (x=x1; x<=x2; x++)
-			if ((elements[TYP(pmap[y+1][x])].Falldown)==2 && (parts[ID(pmap[y+1][x])].flags & FLAG_WATEREQUAL) == check)
-				if (!flood_water(x, y+1, i, originaly, check))
-					return 0;
-	return 1;
+					int oldx = (int)(parts[i].x + 0.5f);
+					int oldy = (int)(parts[i].y + 0.5f);
+					pmap[y - 1][x] = pmap[oldy][oldx];
+					pmap[oldy][oldx] = 0;
+					parts[i].x = x;
+					parts[i].y = y - 1;
+					return true;
+				}
+
+				bitmap[(y * XRES) + x] = 1;
+			}
+			if (y >= CELL + 1)
+				for (int x = x1; x <= x2; x++)
+					if (elements[TYP(pmap[y - 1][x])].Falldown == 2 && !bitmap[((y - 1) * XRES) + x])
+						cs.push(x, y - 1);
+			if (y < YRES - CELL - 1)
+				for (int x = x1; x <= x2; x++)
+					if (elements[TYP(pmap[y + 1][x])].Falldown == 2 && !bitmap[((y + 1) * XRES) + x])
+						cs.push(x, y + 1);
+		} while (cs.getSize() > 0);
+	}
+	catch (std::exception &e)
+	{
+		std::cerr << e.what() << std::endl;
+		return false;
+	}
+	return false;
+}
+
+void Simulation::SetDecoSpace(int newDecoSpace)
+{
+	switch (newDecoSpace)
+	{
+	case 0: // sRGB
+	default: // anything stupid
+		deco_space = 0;
+		break;
+
+	case 1: // linear
+		deco_space = 1;
+		break;
+
+	case 2: // Gamma = 2.2
+		deco_space = 2;
+		break;
+
+	case 3: // Gamma = 1.8
+		deco_space = 3;
+		break;
+	}
 }
 
 void Simulation::SetEdgeMode(int newEdgeMode)
@@ -1036,18 +1047,74 @@ void Simulation::ApplyDecoration(int x, int y, int colR_, int colG_, int colB_, 
 					{
 						Particle part = parts[ID(pmap[y+ry][x+rx])];
 						num += 1.0f;
-						tas += ((float)((part.dcolour>>24)&0xFF));
-						trs += ((float)((part.dcolour>>16)&0xFF));
-						tgs += ((float)((part.dcolour>>8)&0xFF));
-						tbs += ((float)((part.dcolour)&0xFF));
+						float pa = ((float)((part.dcolour>>24)&0xFF)) / 255.f;
+						float pr = ((float)((part.dcolour>>16)&0xFF)) / 255.f;
+						float pg = ((float)((part.dcolour>> 8)&0xFF)) / 255.f;
+						float pb = ((float)((part.dcolour    )&0xFF)) / 255.f;
+						switch (deco_space)
+						{
+						case 0: // sRGB
+							pa = (pa <= 0.04045f) ? (pa / 12.92f) : pow((pa + 0.055f) / 1.055f, 2.4f);
+							pr = (pr <= 0.04045f) ? (pr / 12.92f) : pow((pr + 0.055f) / 1.055f, 2.4f);
+							pg = (pg <= 0.04045f) ? (pg / 12.92f) : pow((pg + 0.055f) / 1.055f, 2.4f);
+							pb = (pb <= 0.04045f) ? (pb / 12.92f) : pow((pb + 0.055f) / 1.055f, 2.4f);
+							break;
+
+						case 1: // linear
+							break;
+
+						case 2: // Gamma = 2.2
+							pa = pow(pa, 2.2f);
+							pr = pow(pr, 2.2f);
+							pg = pow(pg, 2.2f);
+							pb = pow(pb, 2.2f);
+							break;
+
+						case 3: // Gamma = 1.8
+							pa = pow(pa, 1.8f);
+							pr = pow(pr, 1.8f);
+							pg = pow(pg, 1.8f);
+							pb = pow(pb, 1.8f);
+							break;
+						}
+						tas += pa;
+						trs += pr;
+						tgs += pg;
+						tbs += pb;
 					}
 				}
 			if (num == 0)
 				return;
-			ta = (tas/num)/255.0f;
-			tr = (trs/num)/255.0f;
-			tg = (tgs/num)/255.0f;
-			tb = (tbs/num)/255.0f;
+			ta = tas / num;
+			tr = trs / num;
+			tg = tgs / num;
+			tb = tbs / num;
+			switch (deco_space)
+			{
+			case 0: // sRGB
+				ta = (ta <= 0.0031308f) ? (ta * 12.92f) : (1.055f * pow(ta, 1.f / 2.4f) - 0.055f);
+				tr = (tr <= 0.0031308f) ? (tr * 12.92f) : (1.055f * pow(tr, 1.f / 2.4f) - 0.055f);
+				tg = (tg <= 0.0031308f) ? (tg * 12.92f) : (1.055f * pow(tg, 1.f / 2.4f) - 0.055f);
+				tb = (tb <= 0.0031308f) ? (tb * 12.92f) : (1.055f * pow(tb, 1.f / 2.4f) - 0.055f);
+				break;
+
+			case 1: // linear
+				break;
+
+			case 2: // Gamma = 2.2
+				ta = pow(ta, 1.f / 2.2f);
+				tr = pow(tr, 1.f / 2.2f);
+				tg = pow(tg, 1.f / 2.2f);
+				tb = pow(tb, 1.f / 2.2f);
+				break;
+
+			case 3: // Gamma = 1.8
+				ta = pow(ta, 1.f / 1.8f);
+				tr = pow(tr, 1.f / 1.8f);
+				tg = pow(tg, 1.f / 1.8f);
+				tb = pow(tb, 1.f / 1.8f);
+				break;
+			}
 			if (!parts[ID(rp)].dcolour)
 				ta -= 3/255.0f;
 		}
@@ -3108,18 +3175,13 @@ int Simulation::create_part(int p, int x, int y, int t, int v)
 	if (t>=0 && t<PT_NUM && !elements[t].Enabled)
 		return -1;
 
-	if (t==PT_SPRK)
+	if (t == PT_SPRK && !(p == -2 && elements[TYP(pmap[y][x])].CtypeDraw))
 	{
 		int type = TYP(pmap[y][x]);
 		int index = ID(pmap[y][x]);
 		if(type == PT_WIRE)
 		{
 			parts[index].ctype = PT_DUST;
-			return index;
-		}
-		if (p==-2 && ((elements[type].Properties & PROP_DRAWONCTYPE) || type==PT_CRAY))
-		{
-			parts[index].ctype = PT_SPRK;
 			return index;
 		}
 		if (!(type == PT_INST || (elements[type].Properties&PROP_CONDUCTS)) || parts[index].life!=0)
@@ -3167,44 +3229,10 @@ int Simulation::create_part(int p, int x, int y, int t, int v)
 	{
 		if (pmap[y][x])
 		{
-			//If an element has the PROP_DRAWONCTYPE property, and the element being drawn to it does not have PROP_NOCTYPEDRAW (Also some special cases), set the element's ctype
 			int drawOn = TYP(pmap[y][x]);
-			if (drawOn == t)
-				return -1;
-			if (((elements[drawOn].Properties & PROP_DRAWONCTYPE) ||
-				 (drawOn == PT_STOR && !(elements[t].Properties & TYPE_SOLID)) ||
-				 (drawOn == PT_PCLN && t != PT_PSCN && t != PT_NSCN) ||
-				 (drawOn == PT_PBCN && t != PT_PSCN && t != PT_NSCN))
-				&& (!(elements[t].Properties & PROP_NOCTYPEDRAW)))
+			if (elements[drawOn].CtypeDraw)
 			{
-				parts[ID(pmap[y][x])].ctype = t;
-				if (t == PT_LIFE && v >= 0 && v < NGOL)
-				{
-					if (drawOn == PT_CONV)
-						parts[ID(pmap[y][x])].ctype |= PMAPID(v);
-					else if (drawOn != PT_STOR)
-						parts[ID(pmap[y][x])].tmp = v;
-				}
-			}
-			else if (drawOn == PT_DTEC || (drawOn == PT_PSTN && t != PT_FRME) || drawOn == PT_DRAY)
-			{
-				parts[ID(pmap[y][x])].ctype = t;
-				if (t == PT_LIFE && v >= 0 && v < NGOL)
-				{
-					if (drawOn == PT_DTEC)
-						parts[ID(pmap[y][x])].tmp = v;
-					else if (drawOn == PT_DRAY)
-						parts[ID(pmap[y][x])].ctype |= PMAPID(v);
-				}
-			}
-			else if (drawOn == PT_CRAY)
-			{
-				parts[ID(pmap[y][x])].ctype = t;
-				if (t == PT_LIFE && v >= 0 && v < NGOL)
-					parts[ID(pmap[y][x])].ctype |= PMAPID(v);
-				if (t == PT_LIGH)
-					parts[ID(pmap[y][x])].ctype |= PMAPID(30);
-				parts[ID(pmap[y][x])].temp = elements[t].Temperature;
+				elements[drawOn].CtypeDraw(this, ID(pmap[y][x]), t, v);
 			}
 			return -1;
 		}
@@ -3781,40 +3809,38 @@ void Simulation::UpdateParticles(int start, int end)
 					}
 				}
 			}
-			if (elements[t].Gravity || !(elements[t].Properties & TYPE_SOLID))
+
+			pGravX = pGravY = 0;
+			if (!(elements[t].Properties & TYPE_SOLID))
 			{
-				//Gravity mode by Moach
-				switch (gravityMode)
+				if (elements[t].Gravity)
 				{
-				default:
-				case 0:
-					pGravX = 0.0f;
-					pGravY = elements[t].Gravity;
-					break;
-				case 1:
-					pGravX = pGravY = 0.0f;
-					break;
-				case 2:
-					pGravD = 0.01f - hypotf((x - XCNTR), (y - YCNTR));
-					pGravX = elements[t].Gravity * ((float)(x - XCNTR) / pGravD);
-					pGravY = elements[t].Gravity * ((float)(y - YCNTR) / pGravD);
-					break;
+					//Gravity mode by Moach
+					switch (gravityMode)
+					{
+					default:
+					case 0:
+						pGravX = 0.0f;
+						pGravY = elements[t].Gravity;
+						break;
+					case 1:
+						pGravX = pGravY = 0.0f;
+						break;
+					case 2:
+						pGravD = 0.01f - hypotf((x - XCNTR), (y - YCNTR));
+						pGravX = elements[t].Gravity * ((float)(x - XCNTR) / pGravD);
+						pGravY = elements[t].Gravity * ((float)(y - YCNTR) / pGravD);
+						break;
+					}
 				}
-				//Get some gravity from the gravity map
-				if (t==PT_ANAR)
+				if (elements[t].NewtonianGravity)
 				{
-					// perhaps we should have a ptypes variable for this
-					pGravX -= gravx[(y/CELL)*(XRES/CELL)+(x/CELL)];
-					pGravY -= gravy[(y/CELL)*(XRES/CELL)+(x/CELL)];
-				}
-				else if(t!=PT_STKM && t!=PT_STKM2 && t!=PT_FIGH && !(elements[t].Properties & TYPE_SOLID))
-				{
-					pGravX += gravx[(y/CELL)*(XRES/CELL)+(x/CELL)];
-					pGravY += gravy[(y/CELL)*(XRES/CELL)+(x/CELL)];
+					//Get some gravity from the gravity map
+					pGravX += elements[t].NewtonianGravity * gravx[(y/CELL)*(XRES/CELL)+(x/CELL)];
+					pGravY += elements[t].NewtonianGravity * gravy[(y/CELL)*(XRES/CELL)+(x/CELL)];
 				}
 			}
-			else
-				pGravX = pGravY = 0;
+
 			//velocity updates for the particle
 			if (t != PT_SPNG || !(parts[i].flags&FLAG_MOVABLE))
 			{
@@ -4694,7 +4720,7 @@ killed:
 				// Checking stagnant is cool, but then it doesn't update when you change it later.
 				if (water_equal_test && elements[t].Falldown == 2 && RNG::Ref().chance(1, 200))
 				{
-					if (!flood_water(x,y,i,y, parts[i].flags&FLAG_WATEREQUAL))
+					if (!flood_water(x, y, i))
 						goto movedone;
 				}
 				// liquids and powders
@@ -4745,7 +4771,7 @@ killed:
 								goto movedone;
 							}
 						}
-						if (elements[t].Falldown>1 && !grav->ngrav_enable && gravityMode==0 && parts[i].vy>fabsf(parts[i].vx))
+						if (elements[t].Falldown>1 && !grav->IsEnabled() && gravityMode==0 && parts[i].vy>fabsf(parts[i].vx))
 						{
 							s = 0;
 							// stagnant is true if FLAG_STAGNANT was set for this particle in previous frame
@@ -5253,7 +5279,7 @@ void Simulation::BeforeSim()
 		if(aheat_enable)
 			air->update_airh();
 
-		if(grav->ngrav_enable)
+		if(grav->IsEnabled())
 		{
 			grav->gravity_update_async();
 
@@ -5262,11 +5288,6 @@ void Simulation::BeforeSim()
 			gravy = grav->gravy;
 			gravp = grav->gravp;
 			gravmap = grav->gravmap;
-		}
-		if(gravWallChanged)
-		{
-			grav->gravity_mask();
-			gravWallChanged = false;
 		}
 		if(emp_decor>0)
 			emp_decor -= emp_decor/25+2;
@@ -5283,6 +5304,12 @@ void Simulation::BeforeSim()
 	}
 	sandcolour = (int)(20.0f*sin((float)sandcolour_frame*(M_PI/180.0f)));
 	sandcolour_frame = (sandcolour_frame+1)%360;
+
+	if (gravWallChanged)
+	{
+		grav->gravity_mask();
+		gravWallChanged = false;
+	}
 
 	if (debug_currentParticle == 0)
 		RecalcFreeParticles(true);
@@ -5475,7 +5502,8 @@ Simulation::Simulation():
 	sys_pause(0),
 	framerender(0),
 	pretty_powder(0),
-	sandcolour_frame(0)
+	sandcolour_frame(0),
+	deco_space(0)
 {
 	int tportal_rx[] = {-1, 0, 1, 1, 1, 0,-1,-1};
 	int tportal_ry[] = {-1,-1,-1, 0, 1, 1, 1, 0};
