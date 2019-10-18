@@ -2672,6 +2672,7 @@ Renderer::Renderer(Graphics * g, Simulation * sim):
 	renderModePresets.push_back({
 		"TMP Gradient Display",
 		{ RENDER_BASC },
+		{ },
 		COLOUR_TMP
 	});
 
