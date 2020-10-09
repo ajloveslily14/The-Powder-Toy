@@ -11,6 +11,7 @@
 #include <unistd.h>
 #endif
 #include "SDLCompat.h"
+#include "Platform.h"
 
 #include "gui/Style.h"
 #include "gui/interface/Button.h"
@@ -198,7 +199,7 @@ OptionsView::OptionsView():
 	altFullscreen = new ui::Checkbox(ui::Point(23, currentY), ui::Point(1, 16), "Change Resolution", "");
 	autowidth(altFullscreen);
 	altFullscreen->SetActionCallback({ [this] { c->SetAltFullscreen(altFullscreen->GetChecked()); } });
-	tempLabel = new ui::Label(ui::Point(altFullscreen->Position.X+Graphics::textwidth(altFullscreen->GetText())+20, currentY), ui::Point(1, 16), "\bg- Set optimial screen resolution");
+	tempLabel = new ui::Label(ui::Point(altFullscreen->Position.X+Graphics::textwidth(altFullscreen->GetText())+20, currentY), ui::Point(1, 16), "\bg- Set optimal screen resolution");
 	autowidth(tempLabel);
 	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
 	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
@@ -237,6 +238,17 @@ OptionsView::OptionsView():
 	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
 	scrollPanel->AddChild(tempLabel);
 	scrollPanel->AddChild(showAvatars);
+
+	currentY += 20;
+	momentumScroll = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "Momentum/Old Scrolling", "");
+	autowidth(momentumScroll);
+	momentumScroll->SetActionCallback({ [this] { c->SetMomentumScroll(momentumScroll->GetChecked()); } });
+	tempLabel = new ui::Label(ui::Point(momentumScroll->Position.X + Graphics::textwidth(momentumScroll->GetText()) + 20, currentY), ui::Point(1, 16), "\bg- Accelerating instead of step scroll");
+	autowidth(tempLabel);
+	tempLabel->Appearance.HorizontalAlign = ui::Appearance::AlignLeft;
+	tempLabel->Appearance.VerticalAlign = ui::Appearance::AlignMiddle;
+	scrollPanel->AddChild(tempLabel);
+	scrollPanel->AddChild(momentumScroll);
 
 	currentY+=20;
 	mouseClickRequired = new ui::Checkbox(ui::Point(8, currentY), ui::Point(1, 16), "Sticky Categories", "");
@@ -290,19 +302,15 @@ OptionsView::OptionsView():
 	currentY+=20;
 	ui::Button * dataFolderButton = new ui::Button(ui::Point(8, currentY), ui::Point(90, 16), "Open Data Folder");
 	dataFolderButton->SetActionCallback({ [] {
-//one of these should always be defined
-#ifdef WIN
-		const char* openCommand = "explorer ";
-#elif MACOSX
-		const char* openCommand = "open ";
-//#elif LIN
-#else
-		const char* openCommand = "xdg-open ";
-#endif
-		char* workingDirectory = new char[FILENAME_MAX+strlen(openCommand)];
-		sprintf(workingDirectory, "%s\"%s\"", openCommand, getcwd(NULL, 0));
-		system(workingDirectory);
-		delete[] workingDirectory;
+		auto *cwd = getcwd(NULL, 0);
+		if (cwd)
+		{
+			Platform::OpenURI(cwd);
+		}
+		else
+		{
+			fprintf(stderr, "cannot open data folder: getcwd(...) failed\n");
+		}
 	} });
 	scrollPanel->AddChild(dataFolderButton);
 
@@ -341,6 +349,7 @@ void OptionsView::NotifySettingsChanged(OptionsModel * sender)
 	mouseClickRequired->SetChecked(sender->GetMouseClickRequired());
 	includePressure->SetChecked(sender->GetIncludePressure());
 	perfectCirclePressure->SetChecked(sender->GetPerfectCircle());
+	momentumScroll->SetChecked(sender->GetMomentumScroll());
 }
 
 void OptionsView::AttachController(OptionsController * c_)

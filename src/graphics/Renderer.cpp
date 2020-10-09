@@ -2963,7 +2963,7 @@ unsigned int Renderer::GetColourMode()
 
 void Renderer::ResetModes()
 {
-	SetRenderMode({ RENDER_BASC, RENDER_FIRE, RENDER_SPRK });
+	SetRenderMode({ RENDER_BASC, RENDER_FIRE, RENDER_SPRK, RENDER_EFFE });
 	SetDisplayMode({ });
 	SetColourMode(COLOUR_DEFAULT);
 }

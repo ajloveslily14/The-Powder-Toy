@@ -2,11 +2,11 @@
 
 static int update(UPDATE_FUNC_ARGS);
 
-void Element::Element_LSNS()
+void Element::Element_VSNS()
 {
-	Identifier = "DEFAULT_PT_LSNS";
-	Name = "LSNS";
-	Colour = PIXPACK(0x336699);
+	Identifier = "DEFAULT_PT_VSNS";
+	Name = "VSNS";
+	Colour = PIXPACK(0x7C9C00);
 	MenuVisible = 1;
 	MenuSection = SC_SENSOR;
 	Enabled = 1;
@@ -30,7 +30,7 @@ void Element::Element_LSNS()
 
 	DefaultProperties.temp = 4.0f + 273.15f;
 	HeatConduct = 0;
-	Description = "Life sensor, creates a spark when there's a nearby particle with a life higher than its temperature.";
+	Description = "Velocity sensor, creates a spark when there's a nearby particle with velocity higher than its temperature.";
 
 	Properties = TYPE_SOLID;
 
@@ -61,25 +61,22 @@ static int update(UPDATE_FUNC_ARGS)
 				{
 					int r = pmap[y + ry][x + rx];
 					if (!r)
-						r = sim->photons[y + ry][x + rx];
-					if (!r)
 						continue;
 					int rt = TYP(r);
 					if (sim->parts_avg(i, ID(r), PT_INSL) != PT_INSL)
 					{
-						if ((sim->elements[rt].Properties&PROP_CONDUCTS) && !(rt == PT_WATR || rt == PT_SLTW || rt == PT_NTCT || rt == PT_PTCT || rt == PT_INWR) && parts[ID(r)].life == 0)
+						if ((sim->elements[rt].Properties &PROP_CONDUCTS) && !(rt == PT_WATR || rt == PT_SLTW || rt == PT_NTCT || rt == PT_PTCT || rt == PT_INWR) && parts[ID(r)].life == 0)
 						{
 							parts[ID(r)].life = 4;
 							parts[ID(r)].ctype = rt;
 							sim->part_change_type(ID(r), x + rx, y + ry, PT_SPRK);
 						}
 					}
-
 				}
 	}
 	bool doSerialization = false;
 	bool doDeserialization = false;
-	int life = 0;
+	float Vs = 0;
 	for (int rx = -rd; rx < rd + 1; rx++)
 		for (int ry = -rd; ry < rd + 1; ry++)
 			if (x + rx >= 0 && y + ry >= 0 && x + rx < XRES && y + ry < YRES && (rx || ry))
@@ -89,33 +86,40 @@ static int update(UPDATE_FUNC_ARGS)
 					r = sim->photons[y + ry][x + rx];
 				if (!r)
 					continue;
+				float Vx = parts[ID(r)].vx;
+				float Vy = parts[ID(r)].vy;
+				float Vm = sqrt(Vx*Vx + Vy*Vy);
 
 				switch (parts[i].tmp)
 				{
 				case 1:
-					// .life serialization into FILT
-					if (TYP(r) != PT_LSNS && TYP(r) != PT_FILT && parts[ID(r)].life >= 0)
+					// serialization
+					if (TYP(r) != PT_VSNS && TYP(r) != PT_FILT && !(sim->elements[TYP(r)].Properties & TYPE_SOLID))
 					{
 						doSerialization = true;
-						life = parts[ID(r)].life;
+						Vs = Vm;
 					}
 					break;
 				case 3:
-					// .life deserialization
+					// deserialization
 					if (TYP(r) == PT_FILT)
 					{
-						doDeserialization = true;
-						life = parts[ID(r)].ctype;
+						int vel = parts[ID(r)].ctype - 0x10000000;
+						if (vel >= 0 && vel < SIM_MAXVELOCITY)
+						{
+							doDeserialization = true;
+							Vs = vel;
+						}
 					}
 					break;
 				case 2:
 					// Invert mode
-					if (TYP(r) != PT_METL && parts[ID(r)].life <= parts[i].temp - 273.15)
+					if (!(sim->elements[TYP(r)].Properties & TYPE_SOLID) && Vm <= parts[i].temp - 273.15)
 						parts[i].life = 1;
 					break;
 				default:
 					// Normal mode
-					if (TYP(r) != PT_METL && parts[ID(r)].life > parts[i].temp - 273.15)
+					if (!(sim->elements[TYP(r)].Properties & TYPE_SOLID) && Vm > parts[i].temp - 273.15)
 						parts[i].life = 1;
 					break;
 				}
@@ -132,12 +136,12 @@ static int update(UPDATE_FUNC_ARGS)
 					continue;
 				int nx = x + rx;
 				int ny = y + ry;
-				// .life serialization.
+				//Serialization.
 				if (doSerialization)
 				{
 					while (TYP(r) == PT_FILT)
 					{
-						parts[ID(r)].ctype = 0x10000000 + life;
+						parts[ID(r)].ctype = 0x10000000 + (int)(Vs + 0.5f);
 						nx += rx;
 						ny += ry;
 						if (nx < 0 || ny < 0 || nx >= XRES || ny >= YRES)
@@ -145,11 +149,21 @@ static int update(UPDATE_FUNC_ARGS)
 						r = pmap[ny][nx];
 					}
 				}
-				// .life deserialization.
-				else if (doDeserialization)
+				//Deserialization.
+				if (doDeserialization)
 				{
-					if (TYP(r) != PT_FILT)
-						parts[ID(r)].life = life - 0x10000000;
+					if (TYP(r) != PT_FILT && !(sim->elements[TYP(r)].Properties & TYPE_SOLID))
+					{
+						float Vx = parts[ID(r)].vx;
+						float Vy = parts[ID(r)].vy;
+						float Vm = sqrt(Vx*Vx + Vy*Vy);
+						if (Vm > 0)
+						{
+							parts[ID(r)].vx *= Vs / Vm;
+							parts[ID(r)].vy *= Vs / Vm;
+						}
+						break;
+					}
 				}
 			}
 

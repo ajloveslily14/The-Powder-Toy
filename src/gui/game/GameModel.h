@@ -171,16 +171,17 @@ public:
 	void SetSaveFile(SaveFile * newSave, bool invertIncludePressure);
 	void AddObserver(GameView * observer);
 
-	bool GetPaused();
 	void SetPaused(bool pauseState);
-	bool GetDecoration();
+	bool GetPaused();
 	void SetDecoration(bool decorationState);
-	bool GetAHeatEnable();
+	bool GetDecoration();
 	void SetAHeatEnable(bool aHeat);
-	bool GetNewtonianGrvity();
+	bool GetAHeatEnable();
+	void ResetAHeat();
 	void SetNewtonianGravity(bool newtonainGravity);
-	bool GetGravityGrid();
+	bool GetNewtonianGrvity();
 	void ShowGravityGrid(bool showGrid);
+	bool GetGravityGrid();
 	void ClearSimulation();
 	std::vector<Menu*> GetMenuList();
 	std::vector<QuickOption*> GetQuickOptions();
@@ -218,6 +219,11 @@ public:
 	std::vector<Notification*> GetNotifications();
 	void AddNotification(Notification * notification);
 	void RemoveNotification(Notification * notification);
+
+	void RemoveCustomGOLType(const ByteString &identifier);
+
+	ByteString SelectNextIdentifier;
+	int SelectNextTool;
 };
 
 #endif // GAMEMODEL_H

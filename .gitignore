@@ -20,6 +20,8 @@ generated/*
 includes/*
 recordings/
 font/*
+Debug/*
+Release/*
 generate
 Makefile.me
 *.xcodeproj
@@ -69,6 +71,8 @@ site_scons/site_tools/mfprogram/*.pyc
 site_scons/site_tools/gch/*.pyc
 .vscode/
 .vs/
+# Intentional merge conflict (meson stuff)
+subprojects/
 
 screenshot_*
 

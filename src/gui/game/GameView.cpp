@@ -190,7 +190,7 @@ GameView::GameView():
 	buttonTip(""),
 	isButtonTipFadingIn(false),
 	introText(2048),
-	introTextMessage(ByteString(introTextData).FromAscii()),
+	introTextMessage(ByteString(introTextData).FromUtf8()),
 
 	doScreenshot(false),
 	screenshotIndex(0),
@@ -487,37 +487,27 @@ bool GameView::GetPlacingZoom()
 
 void GameView::NotifyActiveToolsChanged(GameModel * sender)
 {
-	decoBrush = false;
 	for (size_t i = 0; i < toolButtons.size(); i++)
 	{
 		auto *tool = toolButtons[i]->tool;
-		if(sender->GetActiveTool(0) == tool)
-		{
-			toolButtons[i]->SetSelectionState(0);	//Primary
-			windTool = tool->GetIdentifier() == "DEFAULT_UI_WIND";
-
-			if (sender->GetActiveTool(0)->GetIdentifier().BeginsWith("DEFAULT_DECOR_"))
-				decoBrush = true;
-		}
-		else if(sender->GetActiveTool(1) == tool)
-		{
-			toolButtons[i]->SetSelectionState(1);	//Secondary
-			if (sender->GetActiveTool(1)->GetIdentifier().BeginsWith("DEFAULT_DECOR_"))
-				decoBrush = true;
-		}
-		else if(sender->GetActiveTool(2) == tool)
-		{
-			toolButtons[i]->SetSelectionState(2);	//Tertiary
-		}
-		else if(sender->GetActiveTool(3) == tool)
-		{
-			toolButtons[i]->SetSelectionState(3);	//Replace Mode
-		}
+		// Primary
+		if (sender->GetActiveTool(0) == tool)
+			toolButtons[i]->SetSelectionState(0);
+		// Secondary
+		else if (sender->GetActiveTool(1) == tool)
+			toolButtons[i]->SetSelectionState(1);
+		// Tertiary
+		else if (sender->GetActiveTool(2) == tool)
+			toolButtons[i]->SetSelectionState(2);
+		// Replace Mode
+		else if (sender->GetActiveTool(3) == tool)
+			toolButtons[i]->SetSelectionState(3);
+		// Not selected at all
 		else
-		{
 			toolButtons[i]->SetSelectionState(-1);
-		}
 	}
+
+	decoBrush = sender->GetActiveTool(0)->GetIdentifier().BeginsWith("DEFAULT_DECOR_");
 
 	if (sender->GetRenderer()->findingElement)
 	{
@@ -595,8 +585,19 @@ void GameView::NotifyToolListChanged(GameModel * sender)
 				}
 				else if (tempButton->GetSelectionState() == 1)
 				{
-					Favorite::Ref().RemoveFavorite(tool->GetIdentifier());
-					c->RebuildFavoritesMenu();
+					auto identifier = tool->GetIdentifier();
+					if (Favorite::Ref().IsFavorite(identifier))
+					{
+						Favorite::Ref().RemoveFavorite(identifier);
+						c->RebuildFavoritesMenu();
+					}
+					else if (identifier.BeginsWith("DEFAULT_PT_LIFECUST_"))
+					{
+						if (ConfirmPrompt::Blocking("Remove custom GOL type", "Are you sure you want to remove " + identifier.Substr(20).FromUtf8() + "?"))
+						{
+							c->RemoveCustomGOLType(identifier);
+						}
+					}
 				}
 			}
 			else
@@ -1037,6 +1038,9 @@ void GameView::OnMouseDown(int x, int y, unsigned button)
 				return;
 			Tool *lastTool = c->GetActiveTool(toolIndex);
 			c->SetLastTool(lastTool);
+			windTool = lastTool->GetIdentifier() == "DEFAULT_UI_WIND";
+			decoBrush = lastTool->GetIdentifier().BeginsWith("DEFAULT_DECOR_");
+
 			UpdateDrawMode();
 
 			isMouseDown = true;
@@ -1387,7 +1391,10 @@ void GameView::OnKeyPress(int key, int scan, bool repeat, bool shift, bool ctrl,
 		ui::Engine::Ref().ConfirmExit();
 		break;
 	case SDL_SCANCODE_U:
-		c->ToggleAHeat();
+		if (ctrl)
+			c->ResetAHeat();
+		else
+			c->ToggleAHeat();
 		break;
 	case SDL_SCANCODE_N:
 		c->ToggleNewtonianGravity();
@@ -1790,8 +1797,7 @@ void GameView::NotifyPlaceSaveChanged(GameModel * sender)
 	placeSaveOffset = ui::Point(0, 0);
 	if(sender->GetPlaceSave())
 	{
-		SaveRenderer::Ref().CopyModes(sender->GetRenderer());
-		placeSaveThumb = SaveRenderer::Ref().Render(sender->GetPlaceSave());
+		placeSaveThumb = SaveRenderer::Ref().Render(sender->GetPlaceSave(), true, true, sender->GetRenderer());
 		selectMode = PlaceSave;
 		selectPoint2 = mousePosition;
 	}
@@ -2165,6 +2171,8 @@ void GameView::OnDraw()
 					// Some elements store extra LIFE info in upper bits of ctype, instead of tmp/tmp2
 					else if (type == PT_CRAY || type == PT_DRAY || type == PT_CONV)
 						sampleInfo << " (" << c->ElementResolve(TYP(ctype), ID(ctype)) << ")";
+					else if (type == PT_CLNE || type == PT_BCLN || type == PT_PCLN || type == PT_PBCN)
+						sampleInfo << " (" << c->ElementResolve(ctype, sample.particle.tmp) << ")";
 					else if (c->IsValidElement(ctype))
 						sampleInfo << " (" << c->ElementResolve(ctype, -1) << ")";
 					else

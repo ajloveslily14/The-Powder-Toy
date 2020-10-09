@@ -181,7 +181,7 @@ void Textbox::cutSelection()
 
 void Textbox::pasteIntoSelection()
 {
-	String newText = format::CleanString(ClipboardPull().FromUtf8(), true, true, inputType != Multiline, inputType == Number || inputType == Numeric);
+	String newText = format::CleanString(ClipboardPull().FromUtf8(), false, true, inputType != Multiline, inputType == Number || inputType == Numeric);
 	if (HasSelection())
 	{
 		if (getLowerSelectionBound() < 0 || getHigherSelectionBound() > (int)backingText.length())
@@ -263,7 +263,7 @@ bool Textbox::CharacterValid(int character)
 				return true;
 		case All:
 		default:
-			return (character >= ' ' && character < 127);
+			return character >= ' ' && character <= 0x10FFFF && !(character >= 0xD800 && character <= 0xDFFF) && !(character >= 0xFDD0 && character <= 0xFDEF) && !((character & 0xFFFF) >= 0xFFFE);
 	}
 	return false;
 }
@@ -494,7 +494,7 @@ void Textbox::OnTextInput(String text)
 			{
 				backingText.Insert(cursor, text);
 			}
-			cursor++;
+			cursor += text.length();
 		}
 		ClearSelection();
 		AfterTextChange(true);
@@ -503,7 +503,25 @@ void Textbox::OnTextInput(String text)
 
 void Textbox::OnMouseClick(int x, int y, unsigned button)
 {
-
+	if (button == SDL_BUTTON_RIGHT)
+	{
+		if (HasSelection())
+		{
+			menu->RemoveItem(0);
+			menu->RemoveItem(1);
+			menu->RemoveItem(2);
+			menu->AddItem(ContextMenuItem("Cut", 1, true));
+			menu->AddItem(ContextMenuItem("Copy", 0, true));
+			menu->AddItem(ContextMenuItem("Paste", 2, true));
+		}
+		else
+		{
+			menu->RemoveItem(0);
+			menu->RemoveItem(1);
+			menu->RemoveItem(2);
+			menu->AddItem(ContextMenuItem("Paste", 2, true));
+		}
+	}
 	if (button != SDL_BUTTON_RIGHT)
 	{
 		mouseDown = true;
