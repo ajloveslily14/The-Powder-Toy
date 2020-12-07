@@ -156,6 +156,10 @@ int Simulation::Load(GameSave * save, bool includePressure, int fullX, int fullY
 			parts[ID(r)] = tempPart;
 			i = ID(r);
 			elementCount[tempPart.type]++;
+			// * pmap will be repopulated a bit later by RecalcFreeParticles;
+			//   until then, remove the entry so the next new particle at the
+			//   same position doesn't overwrite the one we've just copied
+			pmap[y][x] = 0;
 		}
 		else if ((r = photons[y][x]))
 		{
@@ -163,6 +167,8 @@ int Simulation::Load(GameSave * save, bool includePressure, int fullX, int fullY
 			parts[ID(r)] = tempPart;
 			i = ID(r);
 			elementCount[tempPart.type]++;
+			// * same as with pmap above
+			photons[y][x] = 0;
 		}
 		//Allocate new particle
 		else
@@ -1775,7 +1781,7 @@ int Simulation::CreatePartFlags(int x, int y, int c, int flags)
 			(photons[y][x] && TYP(photons[y][x]) == replaceModeSelected))
 		{
 			if (c)
-				create_part(photons[y][x] ? ID(photons[y][x]) : ID(pmap[y][x]), x, y, TYP(c));
+				create_part(photons[y][x] ? ID(photons[y][x]) : ID(pmap[y][x]), x, y, TYP(c), ID(c));
 			else
 				delete_part(x, y);
 		}

@@ -47,6 +47,8 @@ namespace ui
 		void Break();
 		void UnBreak();
 
+		void SetDrawingFrequencyLimit(int limit) {drawingFrequencyLimit = limit;}
+		inline int GetDrawingFrequencyLimit() {return drawingFrequencyLimit;}
 		void SetFullscreen(bool fullscreen) { Fullscreen = fullscreen; }
 		inline bool GetFullscreen() { return Fullscreen; }
 		void SetAltFullscreen(bool altFullscreen) { this->altFullscreen = altFullscreen; }
@@ -82,6 +84,7 @@ namespace ui
 		//inline State* GetState() { return state_; }
 		inline Window* GetWindow() { return state_; }
 		float FpsLimit;
+		int drawingFrequencyLimit;
 		Graphics * g;
 		int Scale;
 		bool Fullscreen;
@@ -119,6 +122,19 @@ namespace ui
 
 		int maxWidth;
 		int maxHeight;
+
+		bool momentumScroll;
+
+	public:
+		inline void SetMomentumScroll(bool newMomentumScroll)
+		{
+			momentumScroll = newMomentumScroll;
+		}
+
+		inline bool GetMomentumScroll() const
+		{
+			return momentumScroll;
+		}
 	};
 
 }

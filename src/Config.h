@@ -34,8 +34,8 @@
 #define MOD_ID 0
 #endif
 
-#if defined(SNAPSHOT) || defined(DEBUG)
-#define FUTURE_SAVE_VERSION 95
+#if defined(SNAPSHOT) || defined(BETA) || defined(DEBUG) || MOD_ID > 0
+#define FUTURE_SAVE_VERSION 96
 #define FUTURE_MINOR_VERSION 0
 #endif
 //VersionInfoEnd

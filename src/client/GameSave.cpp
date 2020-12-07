@@ -819,7 +819,7 @@ void GameSave::readOPS(char * data, int dataLength)
 							minor = bson_iterator_int(&subiter);
 					}
 				}
-#if defined(SNAPSHOT) || defined(DEBUG)
+#if defined(SNAPSHOT) || defined(BETA) || defined(DEBUG) || MOD_ID > 0
 				if (major > FUTURE_SAVE_VERSION || (major == FUTURE_SAVE_VERSION && minor > FUTURE_MINOR_VERSION))
 #else
 				if (major > SAVE_VERSION || (major == SAVE_VERSION && minor > MINOR_VERSION))
@@ -828,7 +828,7 @@ void GameSave::readOPS(char * data, int dataLength)
 					String errorMessage = String::Build("Save from a newer version: Requires version ", major, ".", minor);
 					throw ParseException(ParseException::WrongVersion, errorMessage);
 				}
-#if defined(SNAPSHOT) || defined(DEBUG)
+#if defined(SNAPSHOT) || defined(BETA) || defined(DEBUG) || MOD_ID > 0
 				else if (major > SAVE_VERSION || (major == SAVE_VERSION && minor > MINOR_VERSION))
 					fakeNewerVersion = true;
 #endif
@@ -1299,7 +1299,7 @@ void GameSave::readOPS(char * data, int dataLength)
 						}
 						break;
 					case PT_LIFE:
-						if (savedVersion < 95 || minorVersion < 1)
+						if (savedVersion < 96 && !fakeNewerVersion)
 						{
 							if (particles[newIndex].ctype >= 0 && particles[newIndex].ctype < NGOL)
 							{
@@ -2429,7 +2429,7 @@ char * GameSave::serialiseOPS(unsigned int & dataLength)
 				}
 				if (particles[i].type == PT_LIFE)
 				{
-					RESTRICTVERSION(95, 1);
+					RESTRICTVERSION(96, 0);
 				}
 
 				//Get the pmap entry for the next particle in the same position
@@ -2497,6 +2497,12 @@ char * GameSave::serialiseOPS(unsigned int & dataLength)
 			}
 		}
 	}
+
+#if defined(SNAPSHOT) || defined(BETA) || defined(DEBUG) || MOD_ID > 0
+	// Mark save as incompatible with latest release
+	if (minimumMajorVersion > SAVE_VERSION || (minimumMajorVersion == SAVE_VERSION && minimumMinorVersion > MINOR_VERSION))
+		fromNewerVersion = true;
+#endif
 
 	bson b;
 	b.data = NULL;

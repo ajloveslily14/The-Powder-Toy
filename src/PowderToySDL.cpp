@@ -64,6 +64,7 @@ bool fullscreen = false;
 bool altFullscreen = false;
 bool forceIntegerScaling = true;
 bool resizable = false;
+bool momentumScroll = true;
 
 
 void ClipboardPush(ByteString text)
@@ -172,6 +173,14 @@ void SDLOpen()
 		{
 			desktopWidth = rect.w;
 			desktopHeight = rect.h;
+		}
+		if (Client::Ref().GetPrefBool("AutoDrawLimit", false))
+		{
+			SDL_DisplayMode displayMode;
+			if (!SDL_GetCurrentDisplayMode(displayIndex, &displayMode) && displayMode.refresh_rate >= 60)
+			{
+				ui::Engine::Ref().SetDrawingFrequencyLimit(displayMode.refresh_rate);
+			}
 		}
 	}
 
@@ -496,9 +505,16 @@ void EngineProcess()
 {
 	double frameTimeAvg = 0.0f, correctedFrameTimeAvg = 0.0f;
 	SDL_Event event;
+
+	int drawingTimer = 0;
+	int frameStart = 0;
+
 	while(engine->Running())
 	{
-		int frameStart = SDL_GetTicks();
+		int oldFrameStart = frameStart;
+		frameStart = SDL_GetTicks();
+		drawingTimer += frameStart - oldFrameStart;
+
 		if(engine->Broken()) { engine->UnBreak(); break; }
 		event.type = 0;
 		while (SDL_PollEvent(&event))
@@ -509,21 +525,27 @@ void EngineProcess()
 		if(engine->Broken()) { engine->UnBreak(); break; }
 
 		engine->Tick();
-		engine->Draw();
 
-		if (scale != engine->Scale || fullscreen != engine->Fullscreen ||
-				altFullscreen != engine->GetAltFullscreen() ||
-				forceIntegerScaling != engine->GetForceIntegerScaling() || resizable != engine->GetResizable())
+		int drawcap = ui::Engine::Ref().GetDrawingFrequencyLimit();
+		if (!drawcap || drawingTimer > 1000.f/drawcap)
 		{
-			SDLSetScreen(engine->Scale, engine->GetResizable(), engine->Fullscreen, engine->GetAltFullscreen(),
-						 engine->GetForceIntegerScaling());
-		}
+			engine->Draw();
+			drawingTimer = 0;
+
+			if (scale != engine->Scale || fullscreen != engine->Fullscreen ||
+					altFullscreen != engine->GetAltFullscreen() ||
+					forceIntegerScaling != engine->GetForceIntegerScaling() || resizable != engine->GetResizable())
+			{
+				SDLSetScreen(engine->Scale, engine->GetResizable(), engine->Fullscreen, engine->GetAltFullscreen(),
+							 engine->GetForceIntegerScaling());
+			}
 
 #ifdef OGLI
-		blit();
+			blit();
 #else
-		blit(engine->g->vid);
+			blit(engine->g->vid);
 #endif
+		}
 
 		int frameTime = SDL_GetTicks() - frameStart;
 		frameTimeAvg = frameTimeAvg * 0.8 + frameTime * 0.2;
@@ -706,6 +728,7 @@ int main(int argc, char * argv[])
 	fullscreen = Client::Ref().GetPrefBool("Fullscreen", false);
 	altFullscreen = Client::Ref().GetPrefBool("AltFullscreen", false);
 	forceIntegerScaling = Client::Ref().GetPrefBool("ForceIntegerScaling", true);
+	momentumScroll = Client::Ref().GetPrefBool("MomentumScroll", true);
 
 
 	if(arguments["kiosk"] == "true")
@@ -795,6 +818,7 @@ int main(int argc, char * argv[])
 	ui::Engine::Ref().Fullscreen = fullscreen;
 	ui::Engine::Ref().SetAltFullscreen(altFullscreen);
 	ui::Engine::Ref().SetForceIntegerScaling(forceIntegerScaling);
+	ui::Engine::Ref().SetMomentumScroll(momentumScroll);
 
 	engine = &ui::Engine::Ref();
 	engine->SetMaxSize(desktopWidth, desktopHeight);
